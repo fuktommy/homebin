@@ -14,7 +14,7 @@ Options:
 
 It generates RSS for file, if file.txt exist or file is a HTML.
 If file is HTML, it use <title> tag and <meta name="description"...> tag
-and use <!-- $Id: ... $ --> comment for timestamp.
+and use <!-- $Id$ --> comment for timestamp.
 
 Header file:
     version: 1.0/2.0        # version of RSS
@@ -26,7 +26,7 @@ Header file:
 
 Text file:
     Top line is the title.
-    $Id: ... $ line is the timestamp.
+    $Id$ line is the timestamp.
     Following line is description.
 """
 
