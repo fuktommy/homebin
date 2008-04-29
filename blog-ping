@@ -41,7 +41,7 @@ import urllib
 import xmlrpclib
 from HTMLParser import HTMLParser
 
-__version__ = "$Revision: $"
+__version__ = "$Revision$"
 
 socket.setdefaulttimeout(10)
 

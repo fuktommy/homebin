@@ -39,7 +39,7 @@ import os
 import sys
 import fileinput
 
-__version__ = "$Revision: $"
+__version__ = "$Revision$"
 
 wget = ["wget", "--random-wait", "-nv",
     "--header=Accept-Encoding: gzip, compres, bzip, bzip2, deflate",
