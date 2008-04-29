@@ -1,0 +1,28 @@
+#!/usr/bin/python
+
+import os
+import sys
+from random import shuffle
+
+def cygpath(path):
+    p = os.popen("cygpath -a -w %s" % path)
+    cp = p.readline().strip()
+    return cp
+
+def readdir(dir):
+    buf = []
+    for root, dirs, files in os.walk(dir):
+        for f in files:
+            buf.append(os.path.join(root, f))
+    return buf
+
+if not sys.argv[1:]:
+    sys.exit("usage: randomlist dir... > list")
+files = []
+cwd = os.getcwd()
+for i in sys.argv[1:]:
+    i = cygpath(i)
+    files.extend(readdir(i))
+shuffle(files)
+for f in files:
+    print f.replace("/", "\\")

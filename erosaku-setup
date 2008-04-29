@@ -1,0 +1,2 @@
+#!/bin/sh
+rsync -av $HOME/devel/saku/ /cygdrive/d/fuktommy/Documents/erosaku

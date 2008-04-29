@@ -1,0 +1,15 @@
+#!/bin/sh
+if [ ! -x $1 ]; then
+    CHMOD=1
+    chmod +x $1
+else
+    CHMOD=""
+fi
+
+MAIN=`cygpath -w $1`
+shift
+cmd /c start "$MAIN" $*
+
+if [ $CHMOD ]; then
+    chmod -x $MAIN
+fi

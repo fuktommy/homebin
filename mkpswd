@@ -1,0 +1,16 @@
+#!/usr/bin/python
+import base64
+import md5
+import sys
+
+if len(sys.argv) != 2:
+    sys.exit("Usage: mkpasswd seedfile")
+else:
+    filename = sys.argv[1]
+
+f = file(filename)
+buf = f.read()
+f.close()
+digest = md5.new(buf).digest()
+passwd = base64.encodestring(digest).replace("=", "")
+print passwd,

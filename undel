@@ -1,0 +1,8 @@
+#!/usr/bin/perl -w
+
+foreach (@ARGV) {
+	m|[^/]+$|;
+	$file = $&;
+	$dir  = $`;
+	system "mv", "-iv", "$ENV{HOME}/Trash/$file", $dir;
+}

@@ -1,0 +1,13 @@
+#!/bin/sh
+
+for f in "$@"; do
+	echo $f
+	if [ -L "$f" ]; then
+		/bin/mv -f -- "$f" ${HOME}/Trash/.
+	elif [ -d "$f" ]; then
+		$0 "$f"/*
+		/bin/rmdir "$f"
+	else
+		/bin/mv -f -- "$f" ${HOME}/Trash/.
+	fi
+done

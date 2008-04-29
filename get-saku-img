@@ -1,0 +1,29 @@
+#!/usr/bin/python
+import re
+import os.path
+from os import listdir, walk
+from shutil import copy
+
+isimg = re.compile(r'(jpg|jpeg|gif|png|bmp)$', re.I).search
+#fromdir = '//dayomon/saku/'
+fromdir = '/cygdrive/d/fuktommy/Documents/erosaku/cache'
+todir = '/cygdrive/d/fuktommy/home/fuk/img/shinGETsu'
+
+exists = []
+for root, dirs, files in walk(todir):
+    for f in files:
+        exists.append(f)
+
+for d in listdir(fromdir):
+    d = os.path.join(fromdir, d, 'attach')
+    if not os.path.isdir(d):
+        continue
+    for f in listdir(d):
+        frompath = os.path.join(d, f)
+        found = re.search(r'^\d+_([0-9a-f]{32})\.([^.]+)$', f)
+        if found:
+            f = '%sx.%s' % (found.group(1)[:8], found.group(2))
+        topath = os.path.join(todir, f)
+        if isimg(frompath) and (f not in exists):
+            print f
+            copy(frompath, topath)

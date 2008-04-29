@@ -1,0 +1,2 @@
+#!/bin/sh
+rsync --delete -avh sakura.fuktommy.com:/srv/ /var/backup/sakura/srv/

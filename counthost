@@ -1,0 +1,13 @@
+#!/bin/sh
+
+LOG_DIR=/var/local/log/saku
+DATE=`date +%Y-%m-%d`
+
+if [ -n "$1" ]; then
+	LOG="$LOG_DIR/$1"
+else
+	LOG="$LOG_DIR/$DATE"
+fi
+
+#awk -v FS="<>" "NF > 4 {print \$1\" \"\$5}" $LOG | sort | uniq
+awk -v FS="<>" "(NF > 4) && (\$5 ~ /shinGETsu/) {print \$1\" \"\$5}" $LOG | sort | uniq

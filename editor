@@ -1,0 +1,8 @@
+#!/bin/sh
+if [ -n "$VISUAL" ]; then
+	exec $VISUAL $*
+elif [ -n "$EDITOR" ]; then
+	exec $EDITOR $*
+else
+	exec /usr/bin/editor $*
+fi

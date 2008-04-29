@@ -1,0 +1,12 @@
+#!/bin/sh -e
+if ps aux|grep /usr/bin/ssh-agent > /dev/null; then
+    echo ssh agent is already running.
+    exit 0
+fi
+
+del /tmp/ssh* || true
+ssh-agent | grep -v echo > "${HOME}/.ssh/agent-env"
+. "${HOME}/.ssh/agent-env"
+ssh-add
+#echo "please type:"
+echo ". ~/.ssh/agent-env"

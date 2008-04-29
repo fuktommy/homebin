@@ -1,0 +1,36 @@
+#!/usr/bin/perl
+# ソートして、ファイルを上書きする
+# ついでに重複する行があれば知らせる
+# 使用法: perl sort.pl datafile
+#
+
+die "usage: $0 file\n" unless (@ARGV == 1);
+$file = $ARGV[0];
+die "$0: $file: File not exist.\n" unless (-f $file);
+
+if ($file =~ /\.gz$/) {
+	system "gunzip", $file;
+	$gzip = 1;
+	$file = $`;
+}
+
+open IN, $file;
+@data = <IN>;
+close IN;
+system "mv", $file, "$ENV{HOME}/Trash";
+
+@data = sort @data;
+
+open OUT, "> $file";
+print OUT @data;
+close OUT;
+
+if ($gzip) {
+	system "gzip", $file;
+}
+
+
+foreach $i (1..$#data) {
+	print $data[$i] if ($data[$i] eq $data[$i-1]);
+}
+

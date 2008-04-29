@@ -1,0 +1,19 @@
+#!/usr/bin/python
+
+import sys
+import shutil
+import os.path
+
+from datpath import datpath
+
+savedir = os.path.expanduser("~/2chlog")
+for url in sys.argv[1:]:
+    path = datpath(url)
+    if path:
+        print path
+        basename = os.path.basename(path)
+        dst = os.path.join(savedir, basename)
+        if os.path.exists(dst):
+            print "%s: exists" % dst
+        else:
+            shutil.move(path, dst)

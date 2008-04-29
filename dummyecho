@@ -1,0 +1,10 @@
+#!/usr/bin/python
+from time import sleep
+try:
+    i = 0
+    while True:
+        print i
+        i += 2
+        sleep(120)
+except KeyboardInterrupt:
+    pass

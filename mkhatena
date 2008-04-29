@@ -1,0 +1,22 @@
+#!/bin/sh -e
+#
+# ブログからRSSを取得してはてなダイアリー用に加工する。
+# 前回はいつ作業したのかを覚えておく。
+#
+
+STAMP=$HOME/work/hateda
+OUTDIR=$HOME/tmp
+FEED=http://blog.fuktommy.com/rss
+
+day=`date +%Y-%m-%d`
+stamp=`date +%s`
+last=`cat $STAMP`
+output=$OUTDIR/hatena.$stamp.xml
+
+if [ -e "$output" ]; then
+    echo "$output exists." 1>&2
+    exit 1
+fi
+
+wget -O - $FEED | rss2hatena $last > $output
+echo $stamp > $STAMP

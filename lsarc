@@ -1,0 +1,19 @@
+#!/usr/bin/python
+'''List Saku Archive.
+'''
+import os
+import re
+
+archive_dir = '/srv/www/archive.shingetsu.info'
+
+os.chdir(archive_dir)
+for d in os.listdir('.'):
+    if len(d) == 32:
+        files = os.listdir(d)
+        if files:
+            f = os.path.join(d, files[0])
+            for line in file(f):
+                found = re.search(r'<title>(.*)</title>', line)
+                if found:
+                    title = found.group(1).decode('utf-8', 'replace')
+                    print d, title.encode('euc-jp', 'replace')

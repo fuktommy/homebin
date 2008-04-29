@@ -1,0 +1,22 @@
+#!/bin/sh -e
+
+if [ -z "$1" ]; then
+    echo "usage: briefcase filename" 1>&2
+    exit 1
+fi
+
+TARGET=$1
+BASENAME=`basename $TARGET`
+DIR=$TARGET.d
+
+if [ -e "$DIR" ]; then
+    echo "$DIR exists" 1>&2
+    exit 1
+fi
+
+mkdir $DIR
+md5sum $TARGET > $DIR/$BASENAME.md5
+gpg -r info@fuktommy.com -o $DIR/$BASENAME.gpg -e $TARGET
+cd $DIR
+split -b 5100k $BASENAME.gpg $BASENAME.gpg.
+rm $BASENAME.gpg

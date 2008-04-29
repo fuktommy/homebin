@@ -1,0 +1,23 @@
+#!/usr/bin/perl -w
+
+$dir  = "$ENV{HOME}/.web";
+$file = "$dir/title.txt";
+
+@title = ();
+open IN, $file or die;
+while (<IN>) {
+    @_ = split /\s+|<>/, $_, 2;
+    push @title, $_[0];
+}
+close IN;
+
+chdir $dir or die;
+@dat = `find *.2ch.net *.bbspink.com -name \\*.dat`;
+print "<html><body>\n";
+foreach $d (@dat) {
+    chop $d;
+    $d =~ s|^\./||;
+    $d = "http://$d";
+    print "<a href=file:/cgi-bin/py2ch.cgi?url=$d>$d</a><br>\n" unless (grep $d eq $_, @title);
+}
+print "</body></html>\n";

@@ -1,0 +1,17 @@
+#!/bin/sh -e
+DIR=$HOME/fuk/weblog
+
+if [ -z "$1" ]; then
+    echo "usage: weblog hostname [options]" 1>&2
+    exit 1
+fi
+
+mv -f $DIR/* $HOME/Trash/. || true
+
+cat /var/log/httpd/$1.access.log{.1,} | \
+webalizer -o $DIR \
+    -r fuktommy.com -r shingetsu.info \
+    -n $* \
+    /dev/stdin
+
+exec w3m $DIR/usage_*.html

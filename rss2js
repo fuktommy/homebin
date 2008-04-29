@@ -1,0 +1,93 @@
+#!/usr/bin/python
+"""Read RSS1.0 and write menulist by JavaScript.
+"""
+#
+# Copyright (c) 2005 Satoshi Fukutomi <info@fuktommy.com>.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHORS AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHORS OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#
+
+import cgi
+from xml.sax import parse
+from xml.sax.handler import ContentHandler
+from fileinput import input
+from StringIO import StringIO
+
+size = 20
+coding = "utf-8"
+
+class Item:
+    link = ""
+    title = ""
+
+
+class RSShandler(ContentHandler):
+    elements = ["title", "link"]
+
+    def __init__(self):
+        ContentHandler.__init__(self)
+        self.items = []
+        self.state = ""
+
+    def startElement(self, name, attrs):
+        if name == "item":
+            self.items.append(Item())
+            self.state = "item"
+        elif (self.state == "item") and (name in self.elements):
+            self.state = name
+
+    def endElement(self, name):
+        if self.state and (name in self.elements):
+            self.state = "item"
+
+    def characters(self, contents):
+        contents = contents.encode("utf-8")
+        if (not self.state) or (self.state == "item"):
+            pass
+        elif self.state == "title":
+            self.items[-1].title += contents
+        elif self.state == "link":
+            self.items[-1].link += contents
+
+# End of RSShandler
+
+
+def main():
+    f = input()
+    f.readline()
+    buf = []
+    for line in f:
+        buf.append(line)
+    buf = unicode("".join(buf), coding, "replace").encode("utf-8", "replace")
+    handler = RSShandler()
+    parse(StringIO(buf), handler)
+    print "document.write('%s');" % "<ul>"
+    for item in handler.items[:size-1]:
+        print "document.write('%s');" % \
+              ("<li><a href=\"%s\">%s</a></li>" % 
+               (cgi.escape(item.link, True),
+                unicode(item.title, "utf-8", "replace").encode(coding, "replace")))
+    print "document.write('%s');" % "</ul>"
+
+if __name__ == "__main__":
+    main()

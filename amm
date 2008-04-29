@@ -1,0 +1,11 @@
+#!/usr/bin/python
+# -*- coding: euc-jp -*-
+# 2007-02-04現在、Amazonのモバイルでaltの位置がおかしいから調整する。
+import re
+import sys
+
+buf = sys.stdin.read()
+found = re.search(r'(.*?)( alt=".*?")(.*?)( border="0" />.*)', buf)
+if found:
+    buf = found.group(1) + found.group(3) + found.group(2) + found.group(4)
+sys.stdout.write(buf)

@@ -1,0 +1,25 @@
+#!/usr/bin/perl -w
+sub str_decode($) {
+	my ($s) = @_;
+	$s =~ tr/+/ /;
+	$s =~ s/%([A-Fa-f0-9][A-Fa-f0-9])/pack("C", hex($1))/eg;
+	return $s;
+}
+sub file_decode($) {
+	my($name) = @_;
+	if ($name =~ /_/) {
+		@_ = split /_/, $name, 2;
+		$name = $_[1];
+	}
+	$name =~ s/[0-9A-F][0-9A-F]/pack("C", hex($&))/egi;
+	return $name;
+}
+
+open OUT, "| nkf -Ws| cat";
+$_ = $ARGV[0];
+if (/%/) {
+	print OUT str_decode($_), "\n";
+} else {
+	print OUT file_decode($_), "\n";
+}
+close OUT;

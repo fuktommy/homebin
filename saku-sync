@@ -1,0 +1,2 @@
+#!/bin/sh
+rsync --delete -achv $HOME/devel/saku/ sakura.fuktommy.com:/home/saku/
