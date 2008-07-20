@@ -1,5 +1,14 @@
 #!/usr/bin/python
-'''Download images from sweetumblr.
+'''Download images from sweetumblr or other photo site.
+
+1. Get RSS or ATOM feed.
+2. Find ``img src="(.*)"'' from feed.
+3. Get images.
+
+usage: sweetumblr [output_directory [source_feed_url]]
+
+default value of output_directory: ~/fuk/img/sweetumblr
+default value of source_feed_url: http://mashimaro.tumblr.com/rss
 '''
 #
 # Copyright (c) 2008 Satoshi Fukutomi <info@fuktommy.com>.
@@ -29,6 +38,7 @@
 
 import os
 import re
+import sys
 import urllib
 from gzip import GzipFile
 from StringIO import StringIO
@@ -49,9 +59,19 @@ wget = ['wget', '--random-wait', '-nv', '-nc',
     '-U', 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)',
     '-w', '6']
 
-rssurl = 'http://mashimaro.tumblr.com/rss'
+if len(sys.argv) >= 3:
+    rssurl = sys.argv[2]
+else:
+    rssurl = 'http://mashimaro.tumblr.com/rss'
 
-os.chdir(os.path.expanduser('~/fuk/img/sweetumblr'))
+if len(sys.argv) >= 2:
+    outputdir = sys.argv[1]
+else:
+    outputdir = '~/fuk/img/sweetumblr'
+outputdir = os.path.expanduser(outputdir)
+if not os.path.isdir(outputdir):
+    os.makedirs(outputdir)
+os.chdir(outputdir)
 
 rss = agent.open(rssurl).read()
 try:
@@ -61,6 +81,7 @@ except IOError:
 
 images = []
 for img in re.findall('img src="(.*?)"', rss):
-    images.append(img)
+    if img.find('?') < 0:
+        images.append(img)
 
 os.spawnvp(os.P_WAIT, 'wget', wget+images)
