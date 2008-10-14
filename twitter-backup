@@ -98,7 +98,8 @@ class TwitterLog:
             for element in entry.childNodes:
                 if element.hasChildNodes():
                     update[element.nodeName] = element.firstChild.nodeValue
-                elif element.nodeName == 'link':
+                elif (element.nodeName == 'link') \
+                     and (element.getAttribute('rel') == 'alternate'):
                     update['link'] = element.getAttribute('href')
             update['title'] = update.get('title', '').replace(self.username + ': ', '', 1)
             if ('link' in update) and update['link']:
@@ -162,6 +163,7 @@ def _test():
                        <title>test: foo</title>
                        <updated>bar</updated>
                        <link rel="alternate" type="text/html" href="hoge"/>
+                       <link rel="image" type="image/png" href="imagelink"/>
                      </entry>
                    </feed>'''
             self.logdata = [(u'hoge', u'bar', u'foo')]
