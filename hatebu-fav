@@ -4,7 +4,9 @@
 1. download RSS feed.
 2. show new entries.
 
-usage: hatebu-backup username
+usage: hatebu-backup username [-c codec]
+options:
+    -c codec: output(terminal) codec
 """
 #
 # Copyright (c) 2008 Satoshi Fukutomi <info@fuktommy.com>.
@@ -149,7 +151,7 @@ def load_options():
         else:
             username = a
     if username is None:
-        sys.exit('usage: hatebu-fav username')
+        sys.exit('usage: hatebu-fav username [-c codec]')
     feedurl = '%s%s%s' % (FEED_URL_PREFIX, username, FEED_URL_SUFFIX)
 
     return username, feedurl, codec
@@ -197,10 +199,12 @@ def main():
             display.reverse()
             print strftime('%Y-%m-%d %H:%M:%S')
             for row in display:
-                print ' '.join(i.encode(codec, 'replace') for i in row)
-            print
+                print ' || '.join(i.encode(codec, 'replace') for i in row)
         sleep(SLEEP_TIME)
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        sys.exit()
