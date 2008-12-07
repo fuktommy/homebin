@@ -1,0 +1,206 @@
+#!/usr/bin/python
+"""Hatebu favorite watcher.
+
+1. download RSS feed.
+2. show new entries.
+
+usage: hatebu-backup username
+"""
+#
+# Copyright (c) 2008 Satoshi Fukutomi <info@fuktommy.com>.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHORS AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHORS OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#
+# $Id$
+#
+
+import codecs
+import re
+import socket
+import sys
+import urllib
+import xml.dom.minidom
+from gzip import GzipFile
+from StringIO import StringIO
+from time import strftime, sleep
+
+__version__ = '$Revision$'
+
+FEED_URL_PREFIX = 'http://b.hatena.ne.jp/'
+FEED_URL_SUFFIX = '/favorite.rss'
+SLEEP_TIME = 60
+
+VERSION = __version__[11:-1].strip()
+
+
+class Entry:
+    """Link URL, author, description and so on.
+    """
+
+    """Entry writtein in DOM.
+    """
+    def __init__(self, dom):
+        self.dom = dom
+
+    """Getter.
+    """
+    def get(self, key):
+        elements = self.dom.getElementsByTagName(key)
+        try:
+            return elements[0].lastChild.nodeValue
+        except:
+            return ''
+
+    """ID for check duplicate.
+    """
+    def id(self):
+        author = self.get('dc:creator')
+        link = self.get('link')
+        return '%s / %s' % (author, link)
+
+# End of Entry
+
+
+class Feed:
+    """Enumeration of Entries.
+    """
+
+    """Feed written in DOM.
+    """
+    def __init__(self, dom):
+        self.dom = dom
+
+    """Get entries in feed.
+    """
+    def entries(self):
+        for item in self.dom.getElementsByTagName('item'):
+            yield Entry(item)
+
+# End of Feed
+
+
+def _test():
+    import unittest
+
+    class FeedTest(unittest.TestCase):
+        def setUp(self):
+            self.xml = \
+                '''<?xml version="1.0" encoding="UTF-8"?>
+                   <rdf:RDF
+                     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                     xmlns:dc="http://purl.org/dc/elements/1.1/">
+                   <item rdf:about="http://example.com/1">
+                     <title>title1</title>
+                     <link>http://example.com/1</link>
+                     <description>description1</description>
+                     <dc:creator>creator1</dc:creator>
+                     <dc:date>2008-12-07T12:12:11+09:00</dc:date>
+                     <dc:subject>tag1</dc:subject>
+                     <dc:subject>tag2</dc:subject>
+                   </item>
+                   </rdf:RDF>'''
+
+        def testEntries(self):
+            dom = xml.dom.minidom.parseString(self.xml)
+            display = []
+            for entry in Feed(dom).entries():
+                self.assertEqual('title1', entry.get('title'))
+                self.assertEqual('http://example.com/1', entry.get('link'))
+                self.assertEqual('creator1 / http://example.com/1', entry.id())
+
+    suite = unittest.makeSuite(FeedTest)
+    unittest.TextTestRunner(verbosity=2).run(suite)
+# End of _test
+
+
+def load_options():
+    username = None
+    feedurl = None
+    codec = 'utf_8'
+
+    argv = sys.argv[1:]
+    while argv:
+        a = argv.pop(0)
+        if a == '--test':
+            _test()
+            sys.exit()
+        elif a == '-c':
+            codec = argv.pop(0)
+        else:
+            username = a
+    if username is None:
+        sys.exit('usage: hatebu-fav username')
+    feedurl = '%s%s%s' % (FEED_URL_PREFIX, username, FEED_URL_SUFFIX)
+
+    return username, feedurl, codec
+
+
+def get_feed(url):
+    agent = urllib.URLopener()
+    agent.addheaders = []
+    agent.addheaders.append(('User-Agent', 'Hatebu-Fav/' + VERSION))
+    agent.addheaders.append(('Accept-Encoding', 'gzip'))
+    socket.setdefaulttimeout(10)
+    for i in range(5):
+        try:
+            feed = agent.open(url).read()
+        except Exception, err:
+            sleep(10)
+            continue
+        break
+    try:
+       feed = GzipFile(fileobj=StringIO(feed)).read()
+    except IOError:
+        pass
+    return feed
+
+
+def main():
+    username, feedurl, codec = load_options()
+    history = set()
+
+    while True:
+        feedstr = get_feed(feedurl)
+        dom = xml.dom.minidom.parseString(feedstr)
+        newhistory = set()
+        display = []
+        for entry in Feed(dom).entries():
+            newhistory.add(entry.id())
+            if entry.id() not in history:
+                row = (entry.get('dc:creator'),
+                       entry.get('title'),
+                       entry.get('description'),
+                       entry.get('link'))
+                display.append(row)
+        history = newhistory
+        if display:
+            display.reverse()
+            print strftime('%Y-%m-%d %H:%M:%S')
+            for row in display:
+                print ' '.join(i.encode(codec, 'replace') for i in row)
+            print
+        sleep(SLEEP_TIME)
+
+
+if __name__ == '__main__':
+    main()
