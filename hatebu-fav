@@ -4,9 +4,10 @@
 1. download RSS feed.
 2. show new entries.
 
-usage: hatebu-backup username [-c codec]
+usage: hatebu-backup username [-c codec] [-s sound_file sound_device]
 options:
     -c codec: output(terminal) codec
+    -s sound_file sound_device: *.wav file and /dev/dsp
 """
 #
 # Copyright (c) 2008 Satoshi Fukutomi <info@fuktommy.com>.
@@ -37,6 +38,7 @@ options:
 #
 
 import codecs
+import os.path
 import re
 import socket
 import sys
@@ -101,6 +103,64 @@ class Feed:
 # End of Feed
 
 
+class Sound:
+    """Notify Sound.
+    """
+    data = None
+    device = None
+
+    def __init__(self, sound_file, sound_device):
+        if sound_file and sound_device \
+           and os.path.isfile(sound_file) \
+           and os.path.exists(sound_device) \
+           and not os.path.isfile(sound_device):
+            self.data = file(sound_file, 'rb').read()
+            self.device = sound_device
+
+    def beep(self):
+        if self.data:
+            file(self.device, 'wb').write(self.data)
+
+# End of Sound
+
+
+class Options:
+    def __init__(self):
+        self.username = None
+        self.feedurl = None
+        self.codec = 'utf_8'
+        self.sound_file = None
+        self.sound_device = None
+        self.usage = ('usage: hatebu-fav username [-c codec]'
+                      ' [-s sound_file sound_device]')
+
+    def load(self, argv):
+        argv = argv[1:]
+        try:
+            while argv:
+                a = argv.pop(0)
+                if a == '--test':
+                    _test()
+                    sys.exit()
+                elif a == '-c':
+                    self.codec = argv.pop(0)
+                elif a == '-s':
+                    self.sound_file = argv.pop(0)
+                    self.sound_device = argv.pop(0)
+                else:
+                    self.username = a
+        except IndexError:
+            sys.exit(self.usage)
+        if self.username is None:
+            sys.exit(self.usage)
+        self.feedurl = ''.join([FEED_URL_PREFIX,
+                                self.username, 
+                                FEED_URL_SUFFIX])
+        return self
+
+# End of Options
+
+
 def _test():
     import unittest
 
@@ -135,28 +195,6 @@ def _test():
 # End of _test
 
 
-def load_options():
-    username = None
-    feedurl = None
-    codec = 'utf_8'
-
-    argv = sys.argv[1:]
-    while argv:
-        a = argv.pop(0)
-        if a == '--test':
-            _test()
-            sys.exit()
-        elif a == '-c':
-            codec = argv.pop(0)
-        else:
-            username = a
-    if username is None:
-        sys.exit('usage: hatebu-fav username [-c codec]')
-    feedurl = '%s%s%s' % (FEED_URL_PREFIX, username, FEED_URL_SUFFIX)
-
-    return username, feedurl, codec
-
-
 def get_feed(url):
     agent = urllib.URLopener()
     agent.addheaders = []
@@ -178,11 +216,12 @@ def get_feed(url):
 
 
 def main():
-    username, feedurl, codec = load_options()
+    options = Options().load(sys.argv)
     history = set()
+    sound = Sound(options.sound_file, options.sound_device)
 
     while True:
-        feedstr = get_feed(feedurl)
+        feedstr = get_feed(options.feedurl)
         dom = xml.dom.minidom.parseString(feedstr)
         newhistory = set()
         display = []
@@ -196,10 +235,12 @@ def main():
                 display.append(row)
         history = newhistory
         if display:
+            sound.beep()
             display.reverse()
             print strftime('%Y-%m-%d %H:%M:%S')
             for row in display:
-                print ' || '.join(i.encode(codec, 'replace') for i in row)
+                print ' || '.join(i.encode(options.codec, 'replace')
+                                  for i in row)
         sleep(SLEEP_TIME)
 
 
