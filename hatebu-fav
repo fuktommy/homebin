@@ -208,8 +208,10 @@ def get_feed(url):
             sleep(10)
             continue
         break
+    else:
+        return None
     try:
-       feed = GzipFile(fileobj=StringIO(feed)).read()
+        feed = GzipFile(fileobj=StringIO(feed)).read()
     except IOError:
         pass
     return feed
@@ -222,6 +224,9 @@ def main():
 
     while True:
         feedstr = get_feed(options.feedurl)
+        if not feedstr:
+            sleep(SLEEP_TIME)
+            continue
         dom = xml.dom.minidom.parseString(feedstr)
         newhistory = set()
         display = []
