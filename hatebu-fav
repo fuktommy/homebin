@@ -4,10 +4,14 @@
 1. download RSS feed.
 2. show new entries.
 
-usage: hatebu-backup username [-c codec] [-s sound_file sound_device]
+usage: hatebu-backup username
+            [-c codec]
+            [-s sound_file sound_device]
+            [-t interval-time]
 options:
     -c codec: output(terminal) codec
     -s sound_file sound_device: *.wav file and /dev/dsp
+    -t interval-time: download RSS feed intarval (minutes)
 """
 #
 # Copyright (c) 2008 Satoshi Fukutomi <info@fuktommy.com>.
@@ -52,7 +56,6 @@ __version__ = '$Revision$'
 
 FEED_URL_PREFIX = 'http://b.hatena.ne.jp/'
 FEED_URL_SUFFIX = '/favorite.rss'
-SLEEP_TIME = 60
 
 VERSION = __version__[11:-1].strip()
 
@@ -123,6 +126,45 @@ class Sound:
 
 # End of Sound
 
+class FeedGetter:
+    """Feed Getter.
+    """
+
+    def __init__(self, url):
+        """Feed in url.
+        """
+        self.url = url
+
+    def read(self):
+        """Download feed and return string.
+
+        When fail to download it raises IOError.
+        """
+        agent = urllib.URLopener()
+        agent.addheaders = []
+        agent.addheaders.append(('User-Agent', 'Hatebu-Fav/' + VERSION))
+        agent.addheaders.append(('Accept-Encoding', 'gzip'))
+        socket.setdefaulttimeout(10)
+        for i in range(5):
+            try:
+                feedstr = agent.open(self.url).read()
+            except Exception:
+                sleep(10)
+                continue
+            break
+        else:
+            raise IOError('Download Error')
+        try:
+            feedstr = GzipFile(fileobj=StringIO(feedstr)).read()
+        except IOError:
+            pass
+        if feedstr:
+            return feedstr
+        else:
+            raise IOError('Download Error')
+
+# End of FeedGetter
+
 
 class Options:
     def __init__(self):
@@ -131,8 +173,10 @@ class Options:
         self.codec = 'utf_8'
         self.sound_file = None
         self.sound_device = None
+        self.interval = 60
         self.usage = ('usage: hatebu-fav username [-c codec]'
-                      ' [-s sound_file sound_device]')
+                      ' [-s sound_file sound_device]'
+                      ' [-t interval-time]')
 
     def load(self, argv):
         argv = argv[1:]
@@ -147,9 +191,11 @@ class Options:
                 elif a == '-s':
                     self.sound_file = argv.pop(0)
                     self.sound_device = argv.pop(0)
+                elif a == '-t':
+                    self.interval = int(argv.pop(0)) * 60
                 else:
                     self.username = a
-        except IndexError:
+        except (IndexError, ValueError):
             sys.exit(self.usage)
         if self.username is None:
             sys.exit(self.usage)
@@ -195,37 +241,17 @@ def _test():
 # End of _test
 
 
-def get_feed(url):
-    agent = urllib.URLopener()
-    agent.addheaders = []
-    agent.addheaders.append(('User-Agent', 'Hatebu-Fav/' + VERSION))
-    agent.addheaders.append(('Accept-Encoding', 'gzip'))
-    socket.setdefaulttimeout(10)
-    for i in range(5):
-        try:
-            feed = agent.open(url).read()
-        except Exception, err:
-            sleep(10)
-            continue
-        break
-    else:
-        return None
-    try:
-        feed = GzipFile(fileobj=StringIO(feed)).read()
-    except IOError:
-        pass
-    return feed
-
-
 def main():
     options = Options().load(sys.argv)
     history = set()
     sound = Sound(options.sound_file, options.sound_device)
+    feedgetter = FeedGetter(options.feedurl)
 
     while True:
-        feedstr = get_feed(options.feedurl)
-        if not feedstr:
-            sleep(SLEEP_TIME)
+        try:
+            feedstr = feedgetter.read()
+        except Exception:
+            sleep(options.interval)
             continue
         dom = xml.dom.minidom.parseString(feedstr)
         newhistory = set()
@@ -246,7 +272,7 @@ def main():
             for row in display:
                 print ' || '.join(i.encode(options.codec, 'replace')
                                   for i in row)
-        sleep(SLEEP_TIME)
+        sleep(options.interval)
 
 
 if __name__ == '__main__':
