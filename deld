@@ -1,0 +1,7 @@
+#!/bin/sh
+
+for f in "$@"; do
+	echo $f
+	base=`basename "$f"`
+	/bin/mv -f -- "$f" ${HOME}/Trash/./"$base".`date +%s`
+done
