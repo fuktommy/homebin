@@ -186,10 +186,13 @@ class FeedPool:
         """
         if not os.path.isdir(self.dirname):
             os.makedirs(self.dirname)
+        if not self.loaded:
+            self.load()
         filename = os.path.join(self.dirname, '%d.rdf' % timestamp)
         file(filename, 'w').write(feedstr)
-        file(self.stamp_file, 'w').write(str(timestamp))
-        self.lastdate = timestamp
+        if (self.lastdate is None) or (self.lastdate < timestamp):
+            file(self.stamp_file, 'w').write(str(timestamp))
+            self.lastdate = timestamp
         return self
 
 
@@ -212,7 +215,8 @@ class FeedPoolTest(unittest.TestCase):
         file(stamp_file, 'w').write('1229678768')
 
     def teardown_dir(self):
-        for filename in ('1229851568.rdf', FeedPool.stamp_file_base):
+        for filename in ('1229851568.rdf', '1129678768.rdf',
+                         FeedPool.stamp_file_base):
             filepath = os.path.join(self.dirname, filename)
             if os.path.isfile(filepath):
                 os.remove(filepath)
@@ -240,6 +244,13 @@ class FeedPoolTest(unittest.TestCase):
         feedfile = os.path.join(self.dirname, '1229851568.rdf')
         self.assertEquals(self.xml, file(feedfile).read())
         self.assertEquals(1229851568, FeedPool(self.dirname).load().lastdate)
+
+    def test_add_old(self):
+        self.setup_dir()
+        pool = FeedPool(self.dirname)
+        self.assertEquals(pool, pool.add(self.xml, 1129678768))
+        self.assertEquals(1229678768, pool.lastdate)
+        self.assertEquals(1229678768, FeedPool(self.dirname).load().lastdate)
 
     def test_add_none(self):
         pool = FeedPool(self.dirname)
