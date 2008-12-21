@@ -1,0 +1,370 @@
+#!/usr/bin/python
+"""Hantena Bookmark Backup Script.
+
+http://b.hatena.ne.jp/USER/rss -> BACKUP_DIR/#####.rdf
+
+usege: hatebu-backup user_name backup_dir
+"""
+#
+# Copyright (c) 2008 Satoshi Fukutomi <info@fuktommy.com>.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHORS AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHORS OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#
+# $Id$
+#
+
+import os
+import socket
+import sys
+import time
+import unittest
+import urllib
+import xml.dom.minidom
+from gzip import GzipFile
+from StringIO import StringIO
+
+__version__ = '$Revision$'
+
+VERSION = __version__[11:-1].strip()
+USER_AGENT = 'Hatebu-Backup/%s (http://fuktommy.com/)' % VERSION
+
+
+class Feed:
+    """Feed Parser.
+    """
+    parsed = False
+
+    def __init__(self, feedstr):
+        """Feed from string feedstr.
+        """
+        self.feedstr = feedstr
+
+    def parse(self):
+        """Parse set string.
+        """
+        dom = xml.dom.minidom.parseString(self.feedstr)
+        self.items_per_page = int(
+            dom.getElementsByTagName('opensearch:itemsPerPage')[0]
+               .firstChild.nodeValue)
+        self.item_num = 0
+        self.lastdate = None
+        self.firstdate = None
+        for item in dom.getElementsByTagName('item'):
+            self.item_num += 1
+            date = item.getElementsByTagName('dc:date')[0].firstChild.nodeValue
+            timearray = time.strptime(date, '%Y-%m-%dT%H:%M:%S+09:00')
+            self.firstdate = int(time.mktime(timearray))
+            if self.lastdate is None:
+                self.lastdate = self.firstdate
+        self.is_last_page = self.item_num != self.items_per_page
+        self.parsed = True
+        return self
+
+    def __len__(self):
+        if not self.parsed:
+            self.parse()
+        return self.item_num
+
+    def __str__(self):
+        return self.feedstr
+
+
+class FeedTest(unittest.TestCase):
+    xml = '''<?xml version="1.0" encoding="UTF-8"?>
+        <rdf:RDF
+            xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+            xmlns="http://purl.org/rss/1.0/"
+            xmlns:content="http://purl.org/rss/1.0/modules/content/"
+            xmlns:taxo="http://purl.org/rss/1.0/modules/taxonomy/"
+            xmlns:opensearch="http://a9.com/-/spec/opensearchrss/1.0/"
+            xmlns:dc="http://purl.org/dc/elements/1.1/"
+            xmlns:hatena="http://www.hatena.ne.jp/info/xmlns#"
+        >
+        <channel rdf:about="http://b.hatena.ne.jp/fuktommy/">
+            <title>TITLE</title>
+            <link>http://b.hatena.ne.jp/fuktommy/</link>
+            <description>DESCRIPTION</description>
+            <opensearch:startIndex>1</opensearch:startIndex>
+            <opensearch:itemsPerPage>20</opensearch:itemsPerPage>
+            <opensearch:totalResults>15912</opensearch:totalResults>
+            <items>
+                <rdf:Seq>
+                    <rdf:li rdf:resource="http://example.com/1" />
+                    <rdf:li rdf:resource="http://example.com/2" />
+                    <rdf:li rdf:resource="http://example.com/3" />
+                </rdf:Seq>
+            </items>
+        </channel>
+        <item rdf:about="http://example.com/1">
+            <title>TITLE1</title>
+            <link>http://example.com/1</link>
+            <description>DESCRIPTION1</description>
+            <content:encoded>CONTENT1</content:encoded>
+            <dc:creator>fuktommy</dc:creator>
+            <dc:date>2008-12-21T18:26:08+09:00</dc:date>
+        </item>
+        <item rdf:about="http://example.com/2">
+            <title>TITLE2</title>
+            <link>http://example.com/2</link>
+            <description>DESCRIPTION2</description>
+            <content:encoded>CONTENT2</content:encoded>
+            <dc:creator>fuktommy</dc:creator>
+            <dc:date>2008-12-20T18:26:08+09:00</dc:date>
+        </item>
+        <item rdf:about="http://example.com/3">
+            <title>TITLE3</title>
+            <link>http://example.com/3</link>
+            <description>DESCRIPTION3</description>
+            <content:encoded>CONTENT3</content:encoded>
+            <dc:creator>fuktommy</dc:creator>
+            <dc:date>2008-12-19T18:26:08+09:00</dc:date>
+        </item>
+        </rdf:RDF>'''
+
+    def test_str(self):
+        feed = Feed(self.xml)
+        self.assertEquals(self.xml, str(feed))
+
+    def test_parse(self):
+        feed = Feed(self.xml)
+        self.assertEquals(feed, feed.parse())
+        self.assertEquals(True, feed.parsed)
+        self.assertEquals(1229851568, feed.lastdate)
+        self.assertEquals(1229678768, feed.firstdate)
+        self.assertEquals(20, feed.items_per_page)
+        self.assertEquals(3, feed.item_num)
+        self.assertEquals(True, feed.is_last_page)
+
+    def test_len(self):
+        feed = Feed(self.xml)
+        self.assertEquals(3, len(feed))
+
+
+class FeedPool:
+    """Feed Backup Folder.
+    """
+    loaded = False
+    lastdate = None
+    stamp_file_base = 'timestamp.txt'
+
+    def __init__(self, dirname):
+        """Feed pool saved into dirname.
+        """
+        self.dirname = dirname
+        self.stamp_file = os.path.join(dirname, self.stamp_file_base)
+
+    def load(self):
+        """Load feed pool metadata.
+        """
+        if os.path.isfile(self.stamp_file):
+            self.lastdate = int(file(self.stamp_file).read())
+        self.loaded = True
+        return self
+
+    def add(self, feedstr, timestamp):
+        """Add feedstr with unixtime timestamp.
+        """
+        if not os.path.isdir(self.dirname):
+            os.makedirs(self.dirname)
+        filename = os.path.join(self.dirname, '%d.rdf' % timestamp)
+        file(filename, 'w').write(feedstr)
+        file(self.stamp_file, 'w').write(str(timestamp))
+        self.lastdate = timestamp
+        return self
+
+
+class FeedPoolTest(unittest.TestCase):
+    xml = FeedTest.xml
+    dirname = None
+
+    def setUp(self):
+        if self.dirname is None:
+            raise TypeError('dirname is not set')
+        if os.path.exists(self.dirname):
+            raise ValueError('%s exists already' % self.dirname)
+
+    def tearDown(self):
+        self.teardown_dir()
+
+    def setup_dir(self):
+        os.makedirs(self.dirname)
+        stamp_file = os.path.join(self.dirname, FeedPool.stamp_file_base)
+        file(stamp_file, 'w').write('1229678768')
+
+    def teardown_dir(self):
+        for filename in ('1229851568.rdf', FeedPool.stamp_file_base):
+            filepath = os.path.join(self.dirname, filename)
+            if os.path.isfile(filepath):
+                os.remove(filepath)
+        if os.path.isdir(self.dirname):
+            os.rmdir(self.dirname)
+
+    def test_load(self):
+        self.setup_dir()
+        pool = FeedPool(self.dirname)
+        self.assertEquals(pool, pool.load())
+        self.assertEquals(True, pool.loaded)
+        self.assertEquals(1229678768, pool.lastdate)
+
+    def test_load_none(self):
+        pool = FeedPool(self.dirname)
+        self.assertEquals(pool, pool.load())
+        self.assertEquals(True, pool.loaded)
+        self.assertEquals(None, pool.lastdate)
+
+    def test_add(self):
+        self.setup_dir()
+        pool = FeedPool(self.dirname)
+        self.assertEquals(pool, pool.add(self.xml, 1229851568))
+        self.assertEquals(1229851568, pool.lastdate)
+        feedfile = os.path.join(self.dirname, '1229851568.rdf')
+        self.assertEquals(self.xml, file(feedfile).read())
+        self.assertEquals(1229851568, FeedPool(self.dirname).load().lastdate)
+
+    def test_add_none(self):
+        pool = FeedPool(self.dirname)
+        self.assertEquals(pool, pool.add(self.xml, 1229851568))
+        self.assertEquals(1229851568, pool.lastdate)
+        feedfile = os.path.join(self.dirname, '1229851568.rdf')
+        self.assertEquals(self.xml, file(feedfile).read())
+        self.assertEquals(1229851568, FeedPool(self.dirname).load().lastdate)
+
+
+class FeedGetter:
+    """Feed Getter.
+    """
+
+    def __init__(self, username):
+        """Feed getter for username.
+        """
+        self.username = username
+        self.offset = 0
+
+    def addoffset(self, offset):
+        """Add offset for next page.
+        """
+        self.offset += offset
+        return self
+
+    def read(self):
+        """Download feed and return string.
+
+        When fail to download it raises IOError.
+        """
+        agent = urllib.URLopener()
+        agent.addheaders = []
+        agent.addheaders.append(('User-Agent', USER_AGENT))
+        agent.addheaders.append(('Accept-Encoding', 'gzip'))
+        socket.setdefaulttimeout(10)
+        url = ('http://b.hatena.ne.jp/%s/rss?of=%d'
+               % (self.username, self.offset))
+        print(url)
+        for i in range(5):
+            try:
+                feedstr = agent.open(url).read()
+            except Exception:
+                time.sleep(10)
+                continue
+            break
+        else:
+            raise IOError('Download Error')
+        try:
+            feedstr = GzipFile(fileobj=StringIO(feedstr)).read()
+        except IOError:
+            pass
+        if feedstr:
+            return feedstr
+        else:
+            raise IOError('Download Error')
+
+
+class Options:
+    def __init__(self):
+        self.testmode = False
+        self.testdir = None
+        self.username = None
+        self.backup_dir = None
+        self.usage = ('usage: hatebu-backup user_name backup_dir'
+                      ' [--test -d test_dir]'
+                      '\n'
+                      'test_dir should not exist.')
+
+    def load(self, argv):
+        argv = argv[1:]
+        try:
+            while argv:
+                a = argv.pop(0)
+                if a == '--test':
+                    self.testmode = True
+                if self.testmode and (a == '-d'):
+                    self.testdir = argv.pop(0)
+                elif self.username is not None:
+                    self.backup_dir = a
+                else:
+                    self.username = a
+        except (IndexError, ValueError):
+            sys.exit(self.usage)
+        if (self.username is None) or (self.backup_dir is None):
+            sys.exit(self.usage)
+        if self.testmode and (not self.testdir):
+            sys.exit(self.usage)
+        return self
+
+
+def _test(options):
+    FeedPoolTest.dirname = options.testdir
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.makeSuite(FeedTest))
+    suite.addTest(unittest.makeSuite(FeedPoolTest))
+    result = unittest.TextTestRunner(verbosity=2).run(suite)
+    if result.errors or result.failures:
+        sys.exit(1)
+
+
+def main():
+    options = Options().load(sys.argv)
+    if options.testmode:
+        _test(options)
+        sys.exit()
+    getter = FeedGetter(options.username)
+    pool = FeedPool(options.backup_dir).load()
+    pool_lastdate = pool.lastdate
+    while True:
+        feedstr = getter.read()
+        feed = Feed(feedstr).parse()
+        if len(feed) == 0:
+            break
+        elif feed.lastdate <= pool_lastdate:
+            break
+        else:
+            pool.add(str(feed), feed.lastdate)
+        if feed.firstdate <= pool_lastdate:
+            break
+        elif feed.is_last_page:
+            break
+        getter.addoffset(feed.items_per_page)
+        time.sleep(1)
+
+
+if __name__ == '__main__':
+    main()
