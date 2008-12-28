@@ -335,9 +335,12 @@ class Options:
                     self.username = a
         except (IndexError, ValueError):
             sys.exit(self.usage)
+        if self.testmode:
+            if not self.testdir:
+                sys.exit(self.usage)
+            else:
+                return self
         if (self.username is None) or (self.backup_dir is None):
-            sys.exit(self.usage)
-        if self.testmode and (not self.testdir):
             sys.exit(self.usage)
         return self
 
