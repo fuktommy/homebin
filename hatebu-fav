@@ -148,7 +148,8 @@ class FeedGetter:
         for i in range(5):
             try:
                 feedstr = agent.open(self.url).read()
-            except Exception:
+            except Exception, err:
+                print(err)
                 sleep(10)
                 continue
             break
@@ -250,7 +251,8 @@ def main():
     while True:
         try:
             feedstr = feedgetter.read()
-        except Exception:
+        except Exception, err:
+            print(err)
             sleep(options.interval)
             continue
         dom = xml.dom.minidom.parseString(feedstr)
