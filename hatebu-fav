@@ -8,10 +8,12 @@ usage: hatebu-backup username
             [-c codec]
             [-s sound_file sound_device]
             [-t interval-time]
+            [-v]
 options:
     -c codec: output(terminal) codec
     -s sound_file sound_device: *.wav file and /dev/dsp
     -t interval-time: download RSS feed intarval (minutes)
+    -v: print error messages
 """
 #
 # Copyright (c) 2008 Satoshi Fukutomi <info@fuktommy.com>.
@@ -145,16 +147,17 @@ class FeedGetter:
         agent.addheaders.append(('User-Agent', 'Hatebu-Fav/' + VERSION))
         agent.addheaders.append(('Accept-Encoding', 'gzip'))
         socket.setdefaulttimeout(10)
+        err = None
         for i in range(5):
             try:
                 feedstr = agent.open(self.url).read()
-            except Exception, err:
-                print(err)
+            except Exception, e:
+                err = e
                 sleep(10)
                 continue
             break
         else:
-            raise IOError('Download Error')
+            raise err
         try:
             feedstr = GzipFile(fileobj=StringIO(feedstr)).read()
         except IOError:
@@ -174,10 +177,12 @@ class Options:
         self.codec = 'utf_8'
         self.sound_file = None
         self.sound_device = None
+        self.verbose = False
         self.interval = 60
         self.usage = ('usage: hatebu-fav username [-c codec]'
                       ' [-s sound_file sound_device]'
-                      ' [-t interval-time]')
+                      ' [-t interval-time]'
+                      ' [-v]')
 
     def load(self, argv):
         argv = argv[1:]
@@ -194,6 +199,8 @@ class Options:
                     self.sound_device = argv.pop(0)
                 elif a == '-t':
                     self.interval = int(argv.pop(0)) * 60
+                elif a == '-v':
+                    self.verbose = True
                 else:
                     self.username = a
         except (IndexError, ValueError):
@@ -252,7 +259,8 @@ def main():
         try:
             feedstr = feedgetter.read()
         except Exception, err:
-            print(err)
+            if options.verbose:
+                print(err)
             sleep(options.interval)
             continue
         dom = xml.dom.minidom.parseString(feedstr)
