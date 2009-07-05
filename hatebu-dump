@@ -47,12 +47,12 @@ import os.path
 import socket
 import sys
 import threading
+import time
 import urllib
 from datetime import datetime
 from getpass import getpass
 from random import random
 from sha import sha
-from time import time
 
 __author__ = 'Fuktommy'
 __version__ = '$Revision$'
@@ -71,7 +71,7 @@ class WsseHeader:
         self.password = password
 
     def create_header_token(self):
-        nonce = sha(str(time() + random())).digest()
+        nonce = sha(str(time.time() + random())).digest()
         nonce64 = base64.encodestring(nonce).strip()
 
         created = datetime.utcnow().isoformat() + 'Z'
@@ -121,6 +121,7 @@ def main():
             break
         except Exception, err:
             print err
+            time.sleep(60)
 
     if buf:
         file(output, 'wb').write(buf)
