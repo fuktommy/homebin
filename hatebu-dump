@@ -108,7 +108,7 @@ def main():
 
     password = getpass('Password:')
     agent = urllib.URLopener()
-    socket.setdefaulttimeout(9)
+    socket.setdefaulttimeout(900)
 
     buf = None
     while True:
