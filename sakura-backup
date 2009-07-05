@@ -7,4 +7,6 @@ cd $HOME
 ssh sakura.fuktommy.com "tar -C /home -cvf - fuktommy" > "$LOCALDIR/$REMOTEARC"
 chmod 600 "$LOCALDIR/$REMOTEARC"
 
-rsync --delete -avh sakura.fuktommy.com:/srv/ /var/backup/sakura/srv/
+rsync --delete --delete-excluded -avh \
+    --exclude="- /saku/cache/*/removed" \
+    sakura.fuktommy.com:/srv/ /var/backup/sakura/srv/

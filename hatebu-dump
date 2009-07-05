@@ -1,0 +1,121 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+#
+"""Hatena Bookmark Dump Tool.
+
+This tool export logged in user's all hatena bookmarks.
+
+Usage: hatebu-dump username output.xml
+
+This script refered id:ymotongpoo's WSSE client.
+http://d.hatena.ne.jp/ymotongpoo/20081201/1228115936
+http://code.google.com/p/0x7d8/source/browse/trunk/ymotongpoo/APIs/WSSE.py
+"""
+#
+# Copyright (c) 2009 Satoshi Fukutomi <info@fuktommy.com>.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHORS AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHORS OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#
+# $Id$
+#
+import base64
+import optparse
+import os.path
+import socket
+import sys
+import threading
+import urllib
+from datetime import datetime
+from getpass import getpass
+from random import random
+from sha import sha
+from time import time
+
+__author__ = 'Fuktommy'
+__version__ = '$Revision$'
+
+VERSION = __version__[11:-1].strip()
+
+
+class WsseHeader:
+    """WSSE authorized HTTP Request Header.
+
+    This class refered id:ymotongpoo's WSSE client.
+    """
+
+    def __init__(self, userid, password):
+        self.userid = userid
+        self.password = password
+
+    def create_header_token(self):
+        nonce = sha(str(time() + random())).digest()
+        nonce64 = base64.encodestring(nonce).strip()
+
+        created = datetime.utcnow().isoformat() + 'Z'
+
+        passdigest = sha(nonce + created + self.password).digest()
+        pass64 = base64.encodestring(passdigest).strip()
+
+        wsse = ('UsernameToken Username="%(u)s", PasswordDigest="%(p)s",'
+                + ' Nonce="%(n)s", Created="%(c)s"')
+        value = {'u': self.userid, 'p': pass64, 'n': nonce64, 'c': created}
+
+        return wsse % value
+
+    def get_request_header(self):
+        return [('X-WSSE', self.create_header_token()),
+                ('Authorization', 'WSSE profile="UsernameToken"')]
+
+def main():
+    if len(sys.argv) != 3:
+        sys.exit('Usage: hatebu-dump username output.xml')
+    username = sys.argv[1]
+    output = sys.argv[2]
+    url = 'http://b.hatena.ne.jp/dump'
+
+    if os.path.exists(output):
+        sys.exit('file exists: %s' % output)
+
+    password = getpass('Password:')
+    agent = urllib.URLopener()
+    agent.addheaders = WsseHeader(username, password).get_request_header()
+    agent.addheaders.append(('User-Agent', 'Hatebu-Dump/' + VERSION))
+    socket.setdefaulttimeout(900)
+
+    buf = None
+    while True:
+        try:
+            print agent.addheaders
+            con = agent.open(url)
+            print con.info()
+            buf = con.read()
+            break
+        except Exception, err:
+            print err
+
+    if buf:
+        file(output, 'wb').write(buf)
+
+
+if __name__ == '__main__':
+    main()
