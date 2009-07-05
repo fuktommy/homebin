@@ -90,6 +90,12 @@ class WsseHeader:
                 ('Authorization', 'WSSE profile="UsernameToken"')]
 
 
+def get_request_header(username, password):
+    ret = WsseHeader(username, password).get_request_header()
+    ret.append(('User-Agent', 'Hatebu-Dump/' + VERSION))
+    return ret
+
+
 def main():
     if len(sys.argv) != 3:
         sys.exit('Usage: hatebu-dump username output.xml')
@@ -102,13 +108,12 @@ def main():
 
     password = getpass('Password:')
     agent = urllib.URLopener()
-    agent.addheaders = WsseHeader(username, password).get_request_header()
-    agent.addheaders.append(('User-Agent', 'Hatebu-Dump/' + VERSION))
-    socket.setdefaulttimeout(900)
+    socket.setdefaulttimeout(9)
 
     buf = None
     while True:
         try:
+            agent.addheaders = get_request_header(username, password)
             print agent.addheaders
             con = agent.open(url)
             print con.info()
