@@ -10,6 +10,9 @@ Usage: hatebu-dump username output.xml
 This script refered id:ymotongpoo's WSSE client.
 http://d.hatena.ne.jp/ymotongpoo/20081201/1228115936
 http://code.google.com/p/0x7d8/source/browse/trunk/ymotongpoo/APIs/WSSE.py
+
+The WSSE client released under Apache License 2.0.
+http://www.apache.org/licenses/LICENSE-2.0
 """
 #
 # Copyright (c) 2009 Satoshi Fukutomi <info@fuktommy.com>.
@@ -85,6 +88,7 @@ class WsseHeader:
     def get_request_header(self):
         return [('X-WSSE', self.create_header_token()),
                 ('Authorization', 'WSSE profile="UsernameToken"')]
+
 
 def main():
     if len(sys.argv) != 3:
