@@ -1,3 +1,0 @@
-#!/bin/sh
-/usr/sbin/tmpreaper -v 120 $HOME/fuk/.web | grep Removing
-$HOME/bin/synctitle

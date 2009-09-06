@@ -8,7 +8,7 @@ fi
 
 mv -f $DIR/* $HOME/Trash/. || true
 
-cat /var/log/httpd/$1.access.log{.1,} | \
+cat /var/log/httpd/$1.access.log "`ls /var/log/httpd/$1.access.log*|tail -1`"| \
 webalizer -o $DIR \
     -r fuktommy.com -r shingetsu.info \
     -n $* \
