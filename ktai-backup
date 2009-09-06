@@ -1,0 +1,4 @@
+#!/bin/sh
+rsync -ahv \
+    --exclude="- /music/" \
+    /cygdrive/f/ $HOME/fuk/backup/android/
