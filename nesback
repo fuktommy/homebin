@@ -1,4 +1,0 @@
-#!/bin/sh
-FROM_DIR="/cygdrive/c/Program Files/virtuanes/save"
-TO_DIR="$HOME/tmp"
-tar jcvf $TO_DIR/save.`date +%s`.tar.bz2 "$FROM_DIR"
