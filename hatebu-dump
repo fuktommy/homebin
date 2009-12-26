@@ -96,6 +96,12 @@ def get_request_header(username, password):
     return ret
 
 
+def is_unauthorized(err):
+    return (isinstance(err.args, tuple)
+        and (len(err.args) >= 3)
+        and (err.args[2] == 'Unauthorized'))
+
+
 def main():
     if len(sys.argv) != 3:
         sys.exit('Usage: hatebu-dump username output.xml')
@@ -121,6 +127,8 @@ def main():
             break
         except Exception, err:
             print err
+            if is_unauthorized(err):
+                break
             time.sleep(60)
 
     if buf:
