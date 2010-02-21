@@ -5,7 +5,7 @@ usage: filediet [-n] directory...
 options: -n: show what would have been removed
 '''
 #
-# Copyright (c) 2006,2007 Satoshi Fukutomi <info@fuktommy.com>.
+# Copyright (c) 2006-2010 Satoshi Fukutomi <info@fuktommy.com>.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,9 +31,17 @@ options: -n: show what would have been removed
 #
 
 import sys
-import md5
 import os
 from shutil import move
+
+try:
+    import hashlib
+except ImportError:
+    import md5
+    class _hashlib:
+        md5 = __call__ = md5.new
+    hashlib = _hashlib()
+
 
 #
 # Config
@@ -72,7 +80,9 @@ class MD5Cache:
         for f in files:
             if (f != CACHE) and (f not in self.hash):
                 path = os.path.join(self.dirname, f)
-                self.hash[f] = md5.new(file(path, 'rb').read()).hexdigest()
+                hash = hashlib.md5()
+                hash.update(file(path, 'rb').read())
+                self.hash[f] = hash.hexdigest()
 
     def __iter__(self):
         for key, value in self.hash.iteritems():
