@@ -7,4 +7,4 @@ cd "$HOME/backup/buzz" || exit 1
 DATE=`date +%Y-%m-%d -d yesterday`
 
 mget -O $DATE.xml http://buzz.googleapis.com/feeds/$ID/public/posted
-bzip2 $DATE.xml
+bzip2 -f $DATE.xml
