@@ -6,12 +6,13 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-mv -f $DIR/* $HOME/Trash/. || true
+mv -vf $DIR/*.{png,html,log} $HOME/Trash/. || true
 
-cat /var/log/httpd/$1.access.log "`ls /var/log/httpd/$1.access.log*|tail -1`"| \
+cat /var/log/httpd/$1.access.log "`ls /var/log/httpd/$1.access.log*|tail -1`" > $DIR/tmp.log
 webalizer -o $DIR \
+    -D $DIR/dnscache.bdb \
     -r fuktommy.com -r shingetsu.info \
-    -n $* \
-    /dev/stdin
+    -v -i -n $* \
+    $DIR/tmp.log
 
 exec w3m $DIR/usage_*.html
