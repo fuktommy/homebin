@@ -11,4 +11,4 @@ TARGET=`cygpath -a -w $TARGET`
 if [ -n "$SS" ]; then
     TARGET="/slideshow=$TARGET"
 fi
-"$IVIEW" $TARGET &
+setsid "$IVIEW" $TARGET &

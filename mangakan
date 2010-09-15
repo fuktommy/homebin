@@ -26,7 +26,8 @@ if found:
 
 images = []
 for i in range(max+1):
-    images.append("%s/image/%02d_%02x.jpg" % (parent, i, i))
+    images.append("%s/image/%03d_%02x.jpg" % (parent, i, i))
+    #images.append("%s/image/%02d_%02x.jpg" % (parent, i, i))
     #images.append("%s/sam/%02d_%02x.jpg" % (parent, i, i))
 
 os.spawnvp(os.P_WAIT, "wget", wget+images+["--referer="+parent])
