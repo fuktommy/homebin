@@ -1,0 +1,145 @@
+#!/usr/bin/python
+"""Get image URL from list.
+"""
+#
+# Copyright (c) 2010 Satoshi Fukutomi <info@fuktommy.com>.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHORS AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHORS OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#
+
+import fileinput
+import optparse
+import re
+import sys
+import urlparse
+
+isimg = re.compile(r'(jpg|jpeg|gif|png|bmp)$', re.I).search
+
+
+def get_host(url):
+    """Host name of url.
+
+    >>> get_host('http://example.com/foo/bar')
+    'example.com'
+    >>> get_host('http://example.com:80/foo/bar')
+    'example.com:80'
+    """
+    touple = urlparse.urlparse(url)
+    return touple[1]
+
+
+def get_images_on_one_host(urllist):
+    """Get images on the host that has most many urls.
+
+    >>> urllist = ['http://example.com/aaa.jpg',
+    ...            'http://example.net/bbb.jpg',
+    ...            'http://example.net/ccc.jpg']
+    >>> get_images_on_one_host(urllist)
+    ['http://example.net/bbb.jpg', 'http://example.net/ccc.jpg']
+    """
+
+    # imglist[hostname] = [imgurl1, imgurl2, ...]
+    imglist = {}
+
+    for url in urllist:
+        host = get_host(url)
+        if host in imglist:
+            imglist[host].append(url)
+        else:
+            imglist[host] = [url]
+
+    hosts = imglist.keys()
+    hosts.sort(lambda a, b: len(imglist[b]) - len(imglist[a]))
+    images = imglist[hosts[0]]
+    return images
+
+
+def remove_thumbnail(urllist):
+    """Remove thumbnail url from urllist and return others.
+
+    >>> urllist = ['http://example.com/bbb.jpg',
+    ...            'http://example.com/bbb-s.jpg',
+    ...            'http://example.com/ccc_thumb.jpg',
+    ...            'http://example.com/ccc.jpg',
+    ...            'http://example.com/ddd.jpg']
+    >>> remove_thumbnail(urllist)
+    ['http://example.com/bbb.jpg', 'http://example.com/ccc.jpg', 'http://example.com/ddd.jpg']
+    """
+    basenames = []
+    base_to_url = {}
+    for img in urllist:
+        found = re.search(r'/([^/.]+)[.][^/.]+$', img)
+        if not found:
+            continue
+        base = found.group(1)
+        basenames.append(base)
+        base_to_url[base] = img
+    basenames.sort()
+
+    ret = []
+    thumbnails = set()
+    prev = None
+    for base in basenames:
+        if prev is None:
+            prev = base
+        elif base.startswith(prev):
+            thumbnails.add(base)
+            ret.append(base_to_url[prev])
+        elif prev not in thumbnails:
+            ret.append(base_to_url[prev])
+        prev = base
+    if (base not in thumbnails) and (base not in ret):
+        ret.append(base_to_url[base])
+    return ret
+
+
+def parse_args(argv):
+    usage = 'usage: %prog [options] [files]'
+    parser = optparse.OptionParser(usage=usage)
+    parser.add_option('--test', action='callback', callback=_test,
+                      help='run test and exit')
+    return parser.parse_args(argv)
+
+
+def _test(*args, **kwargs):
+    import doctest
+    doctest.testmod()
+    sys.exit()
+
+
+def _main():
+    options, files = parse_args(sys.argv[1:])
+    global isimg
+    urllist = []
+    for line in fileinput.input(files):
+        url = line.strip()
+        if isimg(url):
+            urllist.append(url)
+    imagelist = get_images_on_one_host(urllist)
+    imagelist = remove_thumbnail(imagelist)
+    for img in imagelist:
+        print img
+
+
+if __name__ == '__main__':
+    _main()

@@ -9,4 +9,5 @@ chmod 600 "$LOCALDIR/$REMOTEARC"
 
 rsync --delete --delete-excluded -avh \
     --exclude="- /saku/cache/*/removed" \
+    --exclude="- /data/blog.fuktommy.com/buzz/2*.xml" \
     sakura.fuktommy.com:/srv/ /var/backup/sakura/srv/

@@ -1,5 +1,16 @@
 #!/bin/sh
 rsync -ahv \
+    --exclude="- /Android/data/" \
+    --exclude="- /anchan/" \
+    --exclude="- /external_sd/" \
+    --exclude="- /newsrob/" \
+    --exclude="- /newsrob/" \
+    --exclude="- /svox/" \
+    --exclude="- /Color 1280x720.mp4" \
+    /cygdrive/g/ $HOME/fuk/backup/android/
+
+rsync -ahv \
+    --exclude="- /DCIM/.thumbnails/" \
     --exclude="- /music/" \
     --exclude="- /newsrob/" \
-    /cygdrive/f/ $HOME/fuk/backup/android/
+    /cygdrive/h/ $HOME/fuk/backup/android_sd/
