@@ -33,7 +33,7 @@ import re
 import sys
 import urlparse
 
-isimg = re.compile(r'(jpg|jpeg|gif|png|bmp)$', re.I).search
+isimg = re.compile(r'[.](jpg|jpeg|gif|png|bmp|zip|lzh|mpg)$', re.I).search
 
 
 def get_host(url):
