@@ -48,12 +48,30 @@ def get_host(url):
     return touple[1]
 
 
+def get_image_url(urllist):
+    """Get image url from urllist.
+
+    >>> urllist = ['http://example.com/aaa.jpg',
+    ...            'http://example.net/bbb.jpg?foo',
+    ...            'http://example.net/ccc.txt']
+    >>> get_image_url(urllist)
+    ['http://example.com/aaa.jpg', 'http://example.net/bbb.jpg']
+    """
+    ret = []
+    for url in urllist:
+        url = re.sub(r'[?].*', '', url)
+        if isimg(url):
+            ret.append(url)
+    return ret   
+
+
 def get_images_on_one_host(urllist):
     """Get images on the host that has most many urls.
 
     >>> urllist = ['http://example.com/aaa.jpg',
     ...            'http://example.net/bbb.jpg',
     ...            'http://example.net/ccc.jpg']
+    ...            'http://example.net/ddd.txt']
     >>> get_images_on_one_host(urllist)
     ['http://example.net/bbb.jpg', 'http://example.net/ccc.jpg']
     """
@@ -129,15 +147,13 @@ def _test(*args, **kwargs):
 
 def _main():
     options, files = parse_args(sys.argv[1:])
-    global isimg
     urllist = []
     for line in fileinput.input(files):
-        url = line.strip()
-        if isimg(url):
-            urllist.append(url)
-    imagelist = get_images_on_one_host(urllist)
-    imagelist = remove_thumbnail(imagelist)
-    for img in imagelist:
+        urllist.append(line.strip())
+    urllist = get_image_url(urllist)
+    urllist = remove_thumbnail(urllist)
+    urllist = get_images_on_one_host(urllist)
+    for img in urllist:
         print img
 
 
