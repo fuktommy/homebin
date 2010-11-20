@@ -5,7 +5,7 @@ if [ -z "$SUFFIX" ]; then
     exit 1
 fi
 BASENAME="winsaku${SUFFIX}"
-/cygdrive/c/Python26/python setup-win.py py2exe
+/cygdrive/d/Python/Python27/python setup-win.py py2exe
 rm -R dist/tcl/tcl*/tzdata
 rm -R dist/tcl/tk*/{images,demos,msgs}
 mv dist ../$BASENAME

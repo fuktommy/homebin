@@ -23,11 +23,10 @@ found = re.search(r"(.*)/(\d+)_\w*\.html", uri)
 if found:
     parent = found.group(1)
     max = int(found.group(2))
+    intlen = len(found.group(2))
 
 images = []
 for i in range(max+1):
-    images.append("%s/image/%03d_%02x.jpg" % (parent, i, i))
-    #images.append("%s/image/%02d_%02x.jpg" % (parent, i, i))
-    #images.append("%s/sam/%02d_%02x.jpg" % (parent, i, i))
+    images.append("%s/image/%0*d_%02x.jpg" % (parent, intlen, i, i))
 
 os.spawnvp(os.P_WAIT, "wget", wget+images+["--referer="+parent])
