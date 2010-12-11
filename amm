@@ -1,11 +1,21 @@
 #!/usr/bin/python
-# -*- coding: euc-jp -*-
-# 2007-02-04¸½ºß¡¢Amazon¤Î¥â¥Ð¥¤¥ë¤Çalt¤Î°ÌÃÖ¤¬¤ª¤«¤·¤¤¤«¤éÄ´À°¤¹¤ë¡£
+# -*- coding: utf-8 -*-
+# 2007-02-04ç¾åœ¨ã€Amazonã®ãƒ¢ãƒã‚¤ãƒ«ã§altã®ä½ç½®ãŒãŠã‹ã—ã„ã‹ã‚‰èª¿æ•´ã™ã‚‹ã€‚
 import re
 import sys
 
-buf = sys.stdin.read()
-found = re.search(r'(.*?)( alt=".*?")(.*?)( border="0" />.*)', buf)
-if found:
-    buf = found.group(1) + found.group(3) + found.group(2) + found.group(4)
-sys.stdout.write(buf)
+
+def _main():
+    buf = sys.stdin.read()
+    found = re.search(r'( alt="[^"]+?")', buf)
+    if not found:
+        return
+    alt = found.group(1)
+
+    buf = buf[:found.start()] + buf[found.end():]
+    buf = re.sub(r' alt=""', alt, buf)
+
+    buf = buf.replace('&', '&amp;')
+    sys.stdout.write(buf)
+
+_main()
