@@ -1,2 +1,2 @@
 #!/bin/sh
-rsync -av $HOME/devel/saku/ /cygdrive/d/fuktommy/Documents/erosaku
+rsync -av $HOME/devel/saku/ $HOME/../Documents/erosaku/

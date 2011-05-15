@@ -1,6 +1,6 @@
 #!/bin/sh
 
-IVIEW="/cygdrive/c/Program Files/IrfanView/i_view32.exe"
+IVIEW="/cygdrive/c/Program Files (x86)/IrfanView/i_view32.exe"
 TARGET="$1"
 if echo $TARGET | grep "\.txt$" > /dev/null; then
     SS=1

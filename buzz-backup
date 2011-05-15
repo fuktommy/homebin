@@ -6,5 +6,6 @@ alias	mget='wget -q --random-wait --header="Accept-Encoding: gzip, compres, bzip
 cd "$HOME/backup/buzz" || exit 1
 DATE=`date +%Y-%m-%d -d yesterday`
 
-mget -O $DATE.xml http://buzz.googleapis.com/feeds/$ID/public/posted
+mget -O $DATE.xml --ca-directory=$HOME/.certs \
+    "http://www.googleapis.com/buzz/v1/activities/$ID/@public?alt=atom&max-results=100"
 bzip2 -f $DATE.xml
