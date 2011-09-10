@@ -5,13 +5,13 @@ rsync -ahv \
     --exclude="- /anchan/" \
     --exclude="- /external_sd/" \
     --exclude="- /newsrob/" \
-    --exclude="- /newsrob/" \
+    --exclude="- /comic/" \
     --exclude="- /svox/" \
     --exclude="- /Color 1280x720.mp4" \
-    /cygdrive/e/ $HOME/fuk/backup/android/
+    /cygdrive/f/ $HOME/fuk/backup/android/
 
-rsync -ahv \
-    --exclude="- /Android/data/" \
-    --exclude="- /DCIM/.thumbnails/" \
-    --exclude="- /newsrob/" \
-    /cygdrive/g/ $HOME/fuk/backup/android_sd/
+#rsync -ahv \
+#    --exclude="- /Android/data/" \
+#    --exclude="- /DCIM/.thumbnails/" \
+#    --exclude="- /newsrob/" \
+#    /cygdrive/e/ $HOME/fuk/backup/android_sd/

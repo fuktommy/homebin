@@ -30,9 +30,10 @@ options: -n: show what would have been removed
 # SUCH DAMAGE.
 #
 
+import random
+import shutil
 import sys
 import os
-from shutil import move
 
 try:
     import hashlib
@@ -163,7 +164,8 @@ def main():
         if (hash[last] == hash[f]) and samefile(last, f):
             print f
             if not dry_run:
-                move(f, TRASH)
+                dst = '%d_%s' % (random.randint(0, 1000), os.path.basename(f))
+                shutil.move(f, os.path.join(TRASH, dst))
         else:
             last = f
 

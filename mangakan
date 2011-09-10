@@ -9,7 +9,6 @@ import os
 import sys
 
 wget = ["wget", "--random-wait", "-v", "-nc",
-    "--header=Accept-Encoding: gzip, compres, bzip, bzip2, deflate",
     "--header=Accept-Language: ja; q=1.0, en;q=0.5",
     "-U", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)",
     "-w", "6", "-t", "10"]
