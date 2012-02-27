@@ -1,11 +1,11 @@
 #!/bin/sh
 rsync -ahv \
     --exclude="- /Android/data/" \
+    --exclude="- /Evernote/" \
     --exclude="- /DCIM/.thumbnails/" \
     --exclude="- /anchan/" \
     --exclude="- /external_sd/" \
     --exclude="- /newsrob/" \
-    --exclude="- /comic/" \
     --exclude="- /svox/" \
     --exclude="- /Color 1280x720.mp4" \
     /cygdrive/f/ $HOME/fuk/backup/android/
