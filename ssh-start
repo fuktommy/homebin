@@ -1,4 +1,4 @@
-#!/bin/ash -e
+#!/bin/dash -e
 if ps aux|grep /usr/bin/ssh-agent > /dev/null; then
     echo ssh agent is already running.
     exit 0

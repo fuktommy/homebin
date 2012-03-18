@@ -1,4 +1,4 @@
-#!/bin/ash
+#!/bin/dash
 
 for f in "$@"; do
 	echo $f
