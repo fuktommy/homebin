@@ -58,6 +58,8 @@ def main():
         url = line.strip()
         output = options.out_pattern % counter
         counter += 1
+        if os.path.isfile(output):
+            continue
         os.spawnvp(os.P_WAIT,
                    wget[0],
                    wget + [url, '-O', output]);
