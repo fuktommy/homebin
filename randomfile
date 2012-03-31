@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Choice random files from directory trees and make hard link to them.
+"""Choice random files from directory trees and make link to them.
 """
 #
 # Copyright (c) 2012 Satoshi Fukutomi <info@fuktommy.com>.
@@ -45,6 +45,9 @@ def parse_args(argv):
     parser.add_option('-r', '--rate', type='int', dest='rate',
                       default=10,
                       help='selection rate (0..100). default: %default')
+    parser.add_option('-s', '--symlink', dest='symlink',
+                      default=False, action='store_true',
+                      help='make symbolic link instead of hard link')
     return parser.parse_args(argv)
 
 
@@ -83,11 +86,15 @@ def main():
 
     print "generating %d links..." % len(src_files)
     os.makedirs(options.dst_dir)
+    if options.symlink:
+        link = os.symlink
+    else:
+        link = os.link
     i = 0
     for s in src_files:
         dst = os.path.join(options.dst_dir,
                            '%d_%s' % (i, os.path.basename(s)))
-        os.link(s, dst)
+        link(s, dst)
         i += 1
 
 if __name__ == '__main__':
