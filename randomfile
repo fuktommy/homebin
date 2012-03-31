@@ -91,9 +91,10 @@ def main():
     else:
         link = os.link
     i = 0
+    index_len = len(str(len(src_files)))
     for s in src_files:
         dst = os.path.join(options.dst_dir,
-                           '%d_%s' % (i, os.path.basename(s)))
+                           '%0*d_%s' % (index_len, i, os.path.basename(s)))
         link(s, dst)
         i += 1
 
