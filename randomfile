@@ -82,7 +82,7 @@ def main():
 
     src_files = []
     for dir in src_dirs:
-        src_files.extend(search_dir(dir, options.rate))
+        src_files.extend(search_dir(os.path.abspath(dir), options.rate))
 
     print "generating %d links..." % len(src_files)
     os.makedirs(options.dst_dir)
