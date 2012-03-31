@@ -62,22 +62,27 @@ def search_dir(dir, rate):
             dirs.append(f)
             continue
 
-    ret = random.sample(files, int(math.ceil(len(files) * rate / 100)))
-    for d in random.sample(dirs, int(math.ceil(len(dirs) * rate / 100))):
-        ret.extend(search_dir(d, rate))
-    return ret
+    dirs = random.sample(dirs, int(math.ceil(len(dirs) * rate / 100)))
+    dirs.sort()
+    files = random.sample(files, int(math.ceil(len(files) * rate / 100)))
+    files.sort()
+
+    for d in dirs:
+        files.extend(search_dir(d, rate))
+    return files
 
 
 def main():
     options, src_dirs = parse_args(sys.argv[1:])
-    if not os.path.isdir(options.dst_dir):
-        os.makedirs(options.dst_dir)
+    if os.path.isdir(options.dst_dir):
+        sys.exit(options.dst_dir + ' is exists.');
 
     src_files = []
     for dir in src_dirs:
         src_files.extend(search_dir(dir, options.rate))
 
     print "generating %d links..." % len(src_files)
+    os.makedirs(options.dst_dir)
     i = 0
     for s in src_files:
         dst = os.path.join(options.dst_dir,
