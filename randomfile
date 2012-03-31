@@ -1,0 +1,89 @@
+#!/usr/bin/python
+"""Choice random files from directory trees and make hard link to them.
+"""
+#
+# Copyright (c) 2012 Satoshi Fukutomi <info@fuktommy.com>.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHORS AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHORS OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#
+
+from __future__ import division
+
+import math
+import optparse
+import os
+import random
+import sys
+
+
+def parse_args(argv):
+    usage = 'usage: %prog [options] [src-dir...]'
+    parser = optparse.OptionParser(usage=usage)
+    parser.add_option('-o', '--dst', dest='dst_dir',
+                      default='./randomfile', metavar='DIR',
+                      help='distination (output) directory. defaut: %default')
+    parser.add_option('-r', '--rate', type='int', dest='rate',
+                      default=10,
+                      help='selection rate (0..100). default: %default')
+    return parser.parse_args(argv)
+
+
+def search_dir(dir, rate):
+    dirs = []
+    files = []
+    for f in os.listdir(dir):
+        f = os.path.join(dir, f)
+        if os.path.islink(f):
+            continue
+        if os.path.isfile(f):
+            files.append(f)
+            continue
+        if os.path.isdir(f):
+            dirs.append(f)
+            continue
+
+    ret = random.sample(files, int(math.ceil(len(files) * rate / 100)))
+    for d in random.sample(dirs, int(math.ceil(len(dirs) * rate / 100))):
+        ret.extend(search_dir(d, rate))
+    return ret
+
+
+def main():
+    options, src_dirs = parse_args(sys.argv[1:])
+    if not os.path.isdir(options.dst_dir):
+        os.makedirs(options.dst_dir)
+
+    src_files = []
+    for dir in src_dirs:
+        src_files.extend(search_dir(dir, options.rate))
+
+    print "generating %d links..." % len(src_files)
+    i = 0
+    for s in src_files:
+        dst = os.path.join(options.dst_dir,
+                           '%d_%s' % (i, os.path.basename(s)))
+        os.link(s, dst)
+        i += 1
+
+if __name__ == '__main__':
+    main()
