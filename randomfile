@@ -48,6 +48,12 @@ def parse_args(argv):
     parser.add_option('-s', '--symlink', dest='symlink',
                       default=False, action='store_true',
                       help='make symbolic link instead of hard link')
+    parser.add_option('-n', '--dry-run', dest='dryrun',
+                      default=False, action='store_true',
+                      help='no action')
+    parser.add_option('-v', '--verbose', dest='verbose',
+                      default=False, action='store_true',
+                      help='verbose output mode')
     return parser.parse_args(argv)
 
 
@@ -85,7 +91,11 @@ def main():
         src_files.extend(search_dir(os.path.abspath(dir), options.rate))
 
     print "generating %d links..." % len(src_files)
-    os.makedirs(options.dst_dir)
+    if options.dryrun and (not options.verbose):
+        return
+
+    if not options.dryrun:
+        os.makedirs(options.dst_dir)
     if options.symlink:
         link = os.symlink
     else:
@@ -95,7 +105,10 @@ def main():
     for s in src_files:
         dst = os.path.join(options.dst_dir,
                            '%0*d_%s' % (index_len, i, os.path.basename(s)))
-        link(s, dst)
+        if options.verbose:
+            print '%s -> %s' % (s, dst)
+        if not options.dryrun:
+            link(s, dst)
         i += 1
 
 if __name__ == '__main__':
