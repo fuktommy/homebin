@@ -2,7 +2,7 @@
 """Get image URL from list.
 """
 #
-# Copyright (c) 2010 Satoshi Fukutomi <info@fuktommy.com>.
+# Copyright (c) 2010,2012 Satoshi Fukutomi <info@fuktommy.com>.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -99,9 +99,9 @@ def remove_thumbnail(urllist):
     ...            'http://example.com/bbb-s.jpg',
     ...            'http://example.com/ccc_thumb.jpg',
     ...            'http://example.com/ccc.jpg',
-    ...            'http://example.com/ddd.jpg']
+    ...            'http://example.com/aaa.jpg']
     >>> remove_thumbnail(urllist)
-    ['http://example.com/bbb.jpg', 'http://example.com/ccc.jpg', 'http://example.com/ddd.jpg']
+    ['http://example.com/bbb.jpg', 'http://example.com/ccc.jpg', 'http://example.com/aaa.jpg']
     """
     basenames = []
     base_to_url = {}
@@ -114,7 +114,7 @@ def remove_thumbnail(urllist):
         base_to_url[base] = img
     basenames.sort()
 
-    ret = []
+    imglist = []
     thumbnails = set()
     prev = None
     for base in basenames:
@@ -122,12 +122,17 @@ def remove_thumbnail(urllist):
             prev = base
         elif base.startswith(prev):
             thumbnails.add(base)
-            ret.append(base_to_url[prev])
+            imglist.append(base_to_url[prev])
         elif prev not in thumbnails:
-            ret.append(base_to_url[prev])
+            imglist.append(base_to_url[prev])
         prev = base
-    if (base not in thumbnails) and (base not in ret):
-        ret.append(base_to_url[base])
+    if (base not in thumbnails) and (base not in imglist):
+        imglist.append(base_to_url[base])
+
+    ret = []
+    for url in urllist:
+        if url in imglist:
+            ret.append(url)
     return ret
 
 
