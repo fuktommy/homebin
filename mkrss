@@ -14,7 +14,7 @@ Options:
 
 It generates RSS for file, if file.txt exist or file is a HTML.
 If file is HTML, it use <title> tag and <meta name="description"...> tag
-and use <!-- $Id$ --> comment for timestamp.
+and use Git log comment for timestamp.
 
 Header file:
     version: 1.0/2.0        # version of RSS
@@ -26,12 +26,11 @@ Header file:
 
 Text file:
     Top line is the title.
-    $Id$ line is the timestamp.
     Following line is description.
 """
 
 #
-# Copyright (c) 2005-2007 Satoshi Fukutomi <info@fuktommy.com>.
+# Copyright (c) 2005-2012 Satoshi Fukutomi <info@fuktommy.com>.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -59,6 +58,7 @@ Text file:
 import HTMLParser
 import fileinput
 import os
+import subprocess
 import sys
 import re
 import time
@@ -140,20 +140,10 @@ def read_text(f):
     txt = file(f + ".txt")
     title = txt.readline()
     desc = ''
-    date = None
     for line in txt:
-        found = re.search(
-            '\$Id: \S+ \d+ (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}Z) .*\$', line)
-        if found:
-            try:
-                date = time.strptime(found.group(1), '%Y-%m-%d %H:%M:%SZ')
-                date = time.mktime(date)
-            except ValueError:
-                sys.stderr.write('Id parse error in %s.txt\n' % f)
-        else:
-            desc += line
+        desc += line
     txt.close()
-    return (title, desc, date)
+    return (title, desc)
 
 class HtmlReader(HTMLParser.HTMLParser):
     """Read from HTML.
@@ -172,7 +162,7 @@ class HtmlReader(HTMLParser.HTMLParser):
         """Constructor."""
 
         HTMLParser.HTMLParser.__init__(self)
-        self.attrs = {"title": "", "description": "", "date": None}
+        self.attrs = {"title": "", "description": ""}
         self.now = ""
         self.encode = encode
 
@@ -209,16 +199,6 @@ class HtmlReader(HTMLParser.HTMLParser):
         if self.now:
             self.attrs[self.now] += data
 
-    def handle_comment(self, data):
-        found = re.search(
-            '\$Id: \S+ \d+ (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}Z) .*\$', data)
-        if found:
-            try:
-                date = time.strptime(found.group(1), '%Y-%m-%d %H:%M:%SZ')
-                self.attrs['date'] = time.mktime(date)
-            except ValueError:
-                sys.stderr.write('Id parse error in %s.txt\n' % f)
-
     def handle_pi(self, data):
         """Overwrite method."""
         xmlencode = self.re_xmlencode.search(data)
@@ -231,7 +211,7 @@ class HtmlReader(HTMLParser.HTMLParser):
         for k in ("title", "description"):
             data = unicode(self.attrs[k], self.encode).encode(encode)
             self.attrs[k] = self.del_space.sub("", data, 0)
-        return (self.attrs["title"], self.attrs["description"], self.attrs["date"])
+        return (self.attrs["title"], self.attrs["description"])
 
 def read_html(f):
     """Read from HTML.
@@ -241,9 +221,9 @@ def read_html(f):
     html = file(f)
     parser = HtmlReader()
     parser.feed(html.read())
-    (title, description, date) = parser.getData()
+    (title, description) = parser.getData()
     parser.close()
-    return(title, description, date)
+    return(title, description)
 
 def findfiles(dir):
     """Search directorys for files.
@@ -267,6 +247,16 @@ def findfiles(dir):
             files.append(f)
 
     return files
+
+def get_date(filename): 
+    command = ['git', 'log', '-n', '1', '--pretty=format:%at', '--', filename]
+    pipe = subprocess.Popen(command, stdout=subprocess.PIPE)
+    try:
+        unixtime = int(pipe.stdout.read())
+    except ValueError:
+        unixtime = os.path.getmtime(filename)
+    pipe.wait()
+    return unixtime
 
 #
 # main
@@ -312,20 +302,17 @@ list = rss.RSS(encode=encode, title=title,
 ishtml = re.compile(r"\.html$")
 del_index = re.compile(r"index\.html$")
 for f in files:
-    fullname = f
     date = None
     title = ""
     desc = ""
+    date = get_date(f)
 
     if os.path.isfile(f + ".txt"):
-        title, desc, date = read_text(f)
+        title, desc = read_text(f)
     elif ishtml.search(f):
-        title, desc, date = read_html(f)
+        title, desc = read_html(f)
         f = del_index.sub("", f)
         f = ishtml.sub("", f)
-    if date is None:
-        #date = os.path.getmtime(fullname)
-        date = 0
     if title:
         f = f[len(dir)+1:]
         list.append(f, title=title, date=date, description=desc)
