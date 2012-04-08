@@ -1,0 +1,138 @@
+#!/usr/bin/python
+"""SmartComic.jp downloader.
+"""
+#
+# Copyright (c) 2012 Satoshi Fukutomi <info@fuktommy.com>.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHORS AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHORS OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#
+import optparse
+import os
+import re
+import subprocess
+import sys
+import threading
+
+wget = ['wget', '--random-wait', '-nv', '-nc',
+    '--header=Accept-Language: ja; q=1.0, en;q=0.5',
+    '-U', 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)',
+    '-w', '6', '-t', '10']
+
+
+class Writer(threading.Thread):
+    def __init__(self, fp, data):
+        threading.Thread.__init__(self)
+        self._fp = fp
+        self._data = data
+
+    def run(self):
+        self._fp.write(self._data)
+        self._fp.close()
+
+
+def parse_args(argv):
+    usage = ('usage: %prog [options] url' '\n\n'
+             'url: such as http://smartcomic.jp/s/view.php?ch=12345&c=TITLE')
+    parser = optparse.OptionParser(usage=usage)
+    parser.add_option('--test', action='callback', callback=_test,
+                      help='run test and exit')
+    return parser.parse_args(argv)
+
+
+def get_folder_name(escaped_title):
+    return escaped_title
+
+
+def get_comic_html(comic_id):
+    from subprocess import Popen, PIPE
+    url = 'http://smartcomic.jp/s/jpglist.php?ch=%s' % comic_id
+    command = wget + ['-O', '-', url]
+    pipe = Popen(command, stdout=PIPE)
+    html = pipe.stdout.read()
+    pipe.wait()
+    return html
+
+
+def download_images(urls):
+    from subprocess import Popen, PIPE
+    command = wget + ['-i', '-']
+    pipe = Popen(command, stdin=PIPE)
+    pipe.stdin.write(urls)
+    pipe.stdin.close()
+    pipe.wait()
+
+
+def get_comic_urls(html):
+    from subprocess import Popen, PIPE
+    command = 'zgu | get-host-img'
+    pipe = Popen(command, stdin=PIPE, stdout=PIPE, shell=True)
+    Writer(pipe.stdin, html).start()
+    urls = pipe.stdout.read()
+    pipe.wait()
+    return urls
+
+
+def get_comic_title(html):
+    found = re.search(r'<title>(.*?)</title>', html)
+    if not found:
+        raise ValueError('%s is not comic page', url)
+    return get_folder_name(found.group(1))
+
+
+def download_comic(comic_id):
+    html = get_comic_html(comic_id)
+    title = get_comic_title(html)
+
+    if os.path.exists(title):
+        sys.exit('%s exists.' % title)
+
+    urls = get_comic_urls(html)
+    os.mkdir(title)
+    os.chdir(title)
+    download_images(urls)
+    download_images(urls)
+
+
+def open_viewer():
+    subprocess.Popen(['iview'])
+
+
+def _test(*args, **kwargs):
+    import doctest
+    doctest.testmod()
+    sys.exit()
+
+
+def _main():
+    options, urls = parse_args(sys.argv[1:])
+    if len(urls) < 1:
+        parse_args(['--help'])
+    found = re.search(r'ch=(\d+)', urls[0])
+    if not found:
+        parse_args(['--help'])
+    download_comic(found.group(1))
+    open_viewer()
+
+
+if __name__ == '__main__':
+    _main()
