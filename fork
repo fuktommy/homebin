@@ -1,8 +1,0 @@
-#!/usr/bin/perl -w
-
-open STDOUT, "> /dev/null";
-open STDERR, "> /dev/null";
-open STDIN,  "< /dev/null";
-unless (fork) {
-	exec @ARGV;
-}

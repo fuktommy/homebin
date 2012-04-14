@@ -1,7 +1,0 @@
-#!/bin/sh
-while true; do
-    clear
-    date
-    netstat -n | grep "192.*EST"
-    sleep 1
-done
