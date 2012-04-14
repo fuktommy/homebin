@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 """SmartComic.jp downloader.
 """
 #
@@ -31,23 +32,11 @@ import os
 import re
 import subprocess
 import sys
-import threading
 
 wget = ['wget', '--random-wait', '-nv', '-nc',
     '--header=Accept-Language: ja; q=1.0, en;q=0.5',
     '-U', 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)',
     '-w', '6', '-t', '10']
-
-
-class Writer(threading.Thread):
-    def __init__(self, fp, data):
-        threading.Thread.__init__(self)
-        self._fp = fp
-        self._data = data
-
-    def run(self):
-        self._fp.write(self._data)
-        self._fp.close()
 
 
 def parse_args(argv):
@@ -60,7 +49,11 @@ def parse_args(argv):
 
 
 def get_folder_name(escaped_title):
-    return escaped_title
+    title = escaped_title.replace('&amp', '＆')
+    title = title.replace('&gt', '＞').replace('&lt', '＜')
+    title = title.replace('&gt', '＞').replace('&lt', '＜')
+    title = title.replace('/', '／')
+    return title
 
 
 def get_comic_html(comic_id):
@@ -85,8 +78,10 @@ def download_images(urls):
 def get_comic_urls(html):
     from subprocess import Popen, PIPE
     command = 'zgu | get-host-img'
-    pipe = Popen(command, stdin=PIPE, stdout=PIPE, shell=True)
-    Writer(pipe.stdin, html).start()
+    pipe = Popen(command, stdin=PIPE, stdout=PIPE, shell=True,
+                 bufsize=len(html)+10)
+    pipe.stdin.write(html)
+    pipe.stdin.close()
     urls = pipe.stdout.read()
     pipe.wait()
     return urls
@@ -110,7 +105,9 @@ def download_comic(comic_id):
     os.mkdir(title)
     os.chdir(title)
     download_images(urls)
+    print '----'
     download_images(urls)
+    print title
 
 
 def open_viewer():
