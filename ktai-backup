@@ -7,6 +7,7 @@ rsync -ahv \
     --exclude="- /external_sd/" \
     --exclude="- /newsrob/" \
     --exclude="- /svox/" \
+    --exclude="- /videos/" \
     --exclude="- /Color 1280x720.mp4" \
     /cygdrive/f/ $HOME/fuk/backup/android/
 
