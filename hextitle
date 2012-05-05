@@ -15,7 +15,7 @@ sub file_decode($) {
 	return $name;
 }
 
-open OUT, "| nkf -Ws| cat";
+open OUT, "| lv -Ou| cat";
 $_ = $ARGV[0];
 if (/%/) {
 	print OUT str_decode($_), "\n";
