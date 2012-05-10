@@ -36,6 +36,7 @@ target = [
     ('~/fuk/backup/sakura/srv/sysconfig/.git', 'sysconfig'),
     ('~/fuk/backup/sakura/srv/stage/blogch3/.git', 'blogch3'),
     ('~/fuk/backup/sakura/srv/stage/fuktommy/.git', 'fuktommy.com'),
+    ('~/fuk/backup/sakura/srv/stage/gplusfeed/.git', 'gplusfeed'),
     ('~/fuk/backup/sakura/srv/stage/shingetsu/.git', 'shingetsu.info'),
 ]
 
