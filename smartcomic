@@ -70,7 +70,7 @@ def download_images(urls):
     from subprocess import Popen, PIPE
     command = wget + ['-i', '-']
     pipe = Popen(command, stdin=PIPE)
-    pipe.stdin.write(urls)
+    pipe.stdin.write('\n'.join(urls))
     pipe.stdin.close()
     pipe.wait()
 
@@ -84,7 +84,7 @@ def get_comic_urls(html):
     pipe.stdin.close()
     urls = pipe.stdout.read()
     pipe.wait()
-    return urls
+    return urls.strip().split()
 
 
 def get_comic_title(html):
@@ -104,6 +104,7 @@ def download_comic(comic_id):
     urls = get_comic_urls(html)
     os.mkdir(title)
     os.chdir(title)
+    print 'downloading %d images into %s ...' % (len(urls), title)
     download_images(urls)
     print '----'
     download_images(urls)
