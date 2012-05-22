@@ -33,6 +33,7 @@ target = [
     ('~/devel/saku/.git', 'saku-ex'),
     ('~/devel/saku-trunk/.git', 'saku-trunk'),
     ('~/fuk/backup/sakura/srv/git/genpasswd-android/.git', 'genpasswd'),
+    ('~/fuk/backup/sakura/srv/git/IteratorPipe/.git', 'iteratorpipe'),
     ('~/fuk/backup/sakura/srv/sysconfig/.git', 'sysconfig'),
     ('~/fuk/backup/sakura/srv/stage/blogch3/.git', 'blogch3'),
     ('~/fuk/backup/sakura/srv/stage/fuktommy/.git', 'fuktommy.com'),
