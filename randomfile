@@ -58,6 +58,9 @@ def parse_args(argv):
     parser.add_option('--video-only', dest='only_type_video',
                       default=False, action='store_true',
                       help='link video only')
+    parser.add_option('-l', '--all-leaf', dest='all_leaf',
+                      default=False, action='store_true',
+                      help='select all child files in selected directories')
     parser.add_option('-n', '--dry-run', dest='dryrun',
                       default=False, action='store_true',
                       help='no action')
@@ -116,7 +119,7 @@ class VideoFilter(object):
         return False
 
 
-def search_dir(dir, rate, filter):
+def search_dir(dir, rate, filter, all_leaf_mode=False):
     dirs = []
     files = []
     for f in os.listdir(dir):
@@ -132,11 +135,12 @@ def search_dir(dir, rate, filter):
 
     dirs = random.sample(dirs, int(math.ceil(len(dirs) * rate / 100)))
     dirs.sort()
-    files = random.sample(files, int(math.ceil(len(files) * rate / 100)))
+    if not all_leaf_mode:
+        files = random.sample(files, int(math.ceil(len(files) * rate / 100)))
     files.sort()
 
     for d in dirs:
-        files.extend(search_dir(d, rate, filter))
+        files.extend(search_dir(d, rate, filter, all_leaf_mode))
     return files
 
 
@@ -148,7 +152,12 @@ def main():
     filter = get_filter(options)
     src_files = []
     for dir in src_dirs:
-        src_files.extend(search_dir(os.path.abspath(dir), options.rate, filter))
+        files = search_dir(
+            os.path.abspath(dir),
+            options.rate,
+            filter,
+            all_leaf_mode=options.all_leaf)
+        src_files.extend(files)
 
     print "generating %d links..." % len(src_files)
     if options.dryrun and (not options.verbose):
