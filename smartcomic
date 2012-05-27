@@ -45,6 +45,12 @@ def parse_args(argv):
     parser = optparse.OptionParser(usage=usage)
     parser.add_option('--test', action='callback', callback=_test,
                       help='run test and exit')
+    parser.add_option('-r', '--retry', dest='retry',
+                      default=False, action='store_true',
+                      help='retry download')
+    parser.add_option('-v', '--viewer', dest='open_viewer',
+                      default=False, action='store_true',
+                      help='open viewer after download')
     return parser.parse_args(argv)
 
 
@@ -94,15 +100,16 @@ def get_comic_title(html):
     return get_folder_name(found.group(1))
 
 
-def download_comic(comic_id):
+def download_comic(comic_id, retry=False):
     html = get_comic_html(comic_id)
     title = get_comic_title(html)
 
-    if os.path.exists(title):
+    if (not retry) and os.path.exists(title):
         sys.exit('%s exists.' % title)
 
     urls = get_comic_urls(html)
-    os.mkdir(title)
+    if not os.path.exists(title):
+        os.mkdir(title)
     os.chdir(title)
     print 'downloading %d images into %s ...' % (len(urls), title)
     download_images(urls)
@@ -128,8 +135,9 @@ def _main():
     found = re.search(r'ch=(\d+)', urls[0])
     if not found:
         parse_args(['--help'])
-    download_comic(found.group(1))
-    open_viewer()
+    download_comic(found.group(1), retry=options.retry)
+    if options.open_viewer:
+        open_viewer()
 
 
 if __name__ == '__main__':
