@@ -5,12 +5,15 @@ TARGET="$1"
 
 case $TARGET in
     *.txt)
-        ARG=/slideshow=.\\
+        ARG=/slideshow=$TARGET
+    ;;
+    ?*)
+        cd $TARGET/.
+        ARG=.\\
     ;;
     *)
         ARG=.\\
     ;;
 esac
 
-cd $TARGET/.
 setsid "$IVIEW" $ARG &
