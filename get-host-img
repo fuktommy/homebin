@@ -85,7 +85,8 @@ def get_images_on_one_host(urllist):
             imglist[host].append(url)
         else:
             imglist[host] = [url]
-
+    if not imglist:
+        return []
     hosts = imglist.keys()
     hosts.sort(lambda a, b: len(imglist[b]) - len(imglist[a]))
     images = imglist[hosts[0]]
@@ -126,7 +127,7 @@ def remove_thumbnail(urllist):
         elif prev not in thumbnails:
             imglist.append(base_to_url[prev])
         prev = base
-    if (base not in thumbnails) and (base not in imglist):
+    if basenames and (base not in thumbnails) and (base not in imglist):
         imglist.append(base_to_url[base])
 
     ret = []
