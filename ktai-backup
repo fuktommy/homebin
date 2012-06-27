@@ -1,9 +1,11 @@
 #!/bin/sh
 rsync -ahv \
     --exclude="- /Android/data/" \
+    --exclude="- /Comica/" \
     --exclude="- /Evernote/" \
     --exclude="- /DCIM/.thumbnails/" \
     --exclude="- /anchan/" \
+    --exclude="- /data/jp.twitbeam/" \
     --exclude="- /external_sd/" \
     --exclude="- /newsrob/" \
     --exclude="- /svox/" \
