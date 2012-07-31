@@ -105,7 +105,9 @@ def download_comic(comic_id, retry=False):
     title = get_comic_title(html)
 
     if (not retry) and os.path.exists(title):
-        sys.exit('%s exists.' % title)
+        sys.stderr.write('%s exists.\n' % title)
+        os.chdir(title)
+        return
 
     urls = get_comic_urls(html)
     if not os.path.exists(title):
