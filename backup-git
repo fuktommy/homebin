@@ -38,7 +38,9 @@ target = [
     ('~/fuk/backup/sakura/srv/stage/blogch3/.git', 'blogch3'),
     ('~/fuk/backup/sakura/srv/stage/fuktommy/.git', 'fuktommy.com'),
     ('~/fuk/backup/sakura/srv/stage/gplusfeed/.git', 'gplusfeed'),
+    ('~/fuk/backup/sakura/srv/stage/private/.git', 'private'),
     ('~/fuk/backup/sakura/srv/stage/shingetsu/.git', 'shingetsu.info'),
+    ('~/fuk/backup/sakura/srv/stage/todorss/.git', 'todorss'),
 ]
 
 backup_dir = '~/fuk/gdrive/git'

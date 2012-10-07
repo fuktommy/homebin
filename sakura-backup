@@ -11,4 +11,7 @@ rsync --delete --delete-excluded -avh \
     --exclude="- /saku/cache/*/removed" \
     --exclude="- /data/blog.fuktommy.com/buzz/2*.xml" \
     --exclude="- /www/gpf.fuktommy.com" \
+    --exclude="- /www/todo.fuktommy.com/data/backup" \
+    --exclude="- /www/todo.fuktommy.com/log" \
+    --exclude="- /www/todo.fuktommy.com/tmp" \
     sakura.fuktommy.com:/srv/ /var/backup/sakura/srv/
