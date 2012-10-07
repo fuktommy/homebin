@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/bash -e
 DIR=$HOME/fuk/weblog
 
 if [ -z "$1" ]; then
@@ -8,8 +8,13 @@ fi
 
 mv -vf $DIR/*.{png,html,log} $HOME/Trash/. || true
 
-cat "`ls /var/log/httpd/$1.access.log*|tail -1`" \
-    /var/log/httpd/$1.access.log \
+#cat "`ls /var/log/httpd/$1.access.log*|tail -1`" \
+#    /var/log/httpd/$1.access.log \
+#    | sed 's/^\S*\s//' \
+#    > $DIR/tmp.log
+
+cat /var/log/apache2/$1.access.log.1 \
+    /var/log/apache2/$1.access.log \
     | sed 's/^\S*\s//' \
     > $DIR/tmp.log
 webalizer -o $DIR \
@@ -18,4 +23,4 @@ webalizer -o $DIR \
     -v -i -n $* \
     $DIR/tmp.log
 
-exec w3m $DIR/usage_*.html
+exec w3m -I utf8 $DIR/usage_*.html
