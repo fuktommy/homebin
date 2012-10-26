@@ -172,12 +172,11 @@ def main():
         link = os.symlink
     else:
         link = os.link
+    if options.shuffle:
+        random.shuffle(src_files)
     i = 0
     index_len = len(str(len(src_files)))
-    shuffle_size = 10 ** index_len
     for s in src_files:
-        if options.shuffle:
-            i = int(random.random() * shuffle_size)
         dst = os.path.join(options.dst_dir,
                            '%0*d_%s' % (index_len, i, os.path.basename(s)))
         if options.verbose:
