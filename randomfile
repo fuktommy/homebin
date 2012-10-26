@@ -49,15 +49,6 @@ def parse_args(argv):
     parser.add_option('-s', '--symlink', dest='symlink',
                       default=False, action='store_true',
                       help='make symbolic link instead of hard link')
-    parser.add_option('--audio-only', dest='only_type_audio',
-                      default=False, action='store_true',
-                      help='link audio only')
-    parser.add_option('--image-only', dest='only_type_image',
-                      default=False, action='store_true',
-                      help='link image only')
-    parser.add_option('--video-only', dest='only_type_video',
-                      default=False, action='store_true',
-                      help='link video only')
     parser.add_option('-l', '--all-leaf', dest='all_leaf',
                       default=False, action='store_true',
                       help='select all child files in selected directories')
@@ -67,6 +58,18 @@ def parse_args(argv):
     parser.add_option('-v', '--verbose', dest='verbose',
                       default=False, action='store_true',
                       help='verbose output mode')
+    parser.add_option('--shuffle', dest='shuffle',
+                      default=False, action='store_true',
+                      help='shuffle files order')
+    parser.add_option('--audio-only', dest='only_type_audio',
+                      default=False, action='store_true',
+                      help='link audio only')
+    parser.add_option('--image-only', dest='only_type_image',
+                      default=False, action='store_true',
+                      help='link image only')
+    parser.add_option('--video-only', dest='only_type_video',
+                      default=False, action='store_true',
+                      help='link video only')
     return parser.parse_args(argv)
 
 
@@ -171,7 +174,10 @@ def main():
         link = os.link
     i = 0
     index_len = len(str(len(src_files)))
+    shuffle_size = 10 ** index_len
     for s in src_files:
+        if options.shuffle:
+            i = int(random.random() * shuffle_size)
         dst = os.path.join(options.dst_dir,
                            '%0*d_%s' % (index_len, i, os.path.basename(s)))
         if options.verbose:
