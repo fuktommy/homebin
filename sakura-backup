@@ -1,10 +1,10 @@
 #!/bin/sh -e
 
-REMOTEARC="sakura.tar"
+REMOTEARC="sakura.tar.bz2"
 LOCALDIR="$HOME/backup"
 
 cd $HOME
-ssh sakura.fuktommy.com "tar -C /home -cvf - fuktommy" > "$LOCALDIR/$REMOTEARC"
+ssh sakura.fuktommy.com "tar -C /home -jcvf - fuktommy" > "$LOCALDIR/$REMOTEARC"
 chmod 600 "$LOCALDIR/$REMOTEARC"
 
 rsync --delete --delete-excluded -avh \
