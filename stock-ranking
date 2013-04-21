@@ -1,0 +1,180 @@
+#!/usr/bin/python
+"""Stock ranking using http://k-db.com/
+"""
+#
+# Copyright (c) 2013 Satoshi Fukutomi <info@fuktommy.com>.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHORS AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHORS OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#
+
+from __future__ import division
+import csv
+import math
+import optparse
+import os
+import sys
+import time
+import urllib2
+
+
+def parse_args(argv):
+    """Parse command line argments.
+    """
+    default_workdir = os.path.expanduser('~/.stock-ranking')
+    usage = 'usage: %prog [options] [string...]'
+    parser = optparse.OptionParser(usage=usage)
+    parser.add_option('-d', '--workdir', dest='workdir',
+                      default=default_workdir, metavar='PATH',
+                      help='working directory')
+    return parser.parse_args(argv)
+
+
+class DataSource(object):
+    def __init__(self, date, workdir):
+        """Create data source by date(YYYY-MM-DD)
+        """
+        self.date = date
+        self.workdir = workdir
+        self.basename = '%s_all.csv' % date
+        self.path = os.path.join(workdir, self.basename)
+        self.url = ('http://k-db.com/site/download.aspx'
+                 + '?p=all&download=csv&date=' + date)
+
+    def is_fetched(self):
+        return os.path.isfile(self.path)
+
+    def fetch(self):
+        buf = urllib2.urlopen(self.url).read()
+        if not os.path.isdir(self.workdir):
+            os.makedirs(self.workdir)
+        open(self.path, 'w').write(buf)
+
+
+def get_dates(now):
+    dates = []
+    for i in xrange(0, 14):
+        d = now - i * 24 * 60 * 60
+        day = time.strftime('%w', time.localtime(d))
+        if day in ('0', '6'):
+            # Sunday or Saturday
+            continue
+        dates.append(time.strftime('%Y-%m-%d', time.localtime(d)))
+    dates.reverse()
+    return dates
+
+def remove_old_files(sources, workdir):
+    if not os.path.isdir(workdir):
+        return
+    expected_files = [s.basename for s in sources]
+    for f in os.listdir(workdir):
+        if f not in expected_files:
+            os.remove(os.path.join(workdir, f))
+
+
+class Stock(object):
+    def __init__(self, code, name):
+        self.code = code
+        self.name = name
+        self.point = 0
+        self.last_average = -1
+        self.diff = []
+
+    def add(self, min, max, turnover):
+        if min < 100:
+            self.point -= 10000
+            return
+        if turnover < 1000:
+            self.point -= 10000
+            return
+        average = (min + max) / 2
+        diff = (max - min) / min
+        self.point += diff
+        self.diff.append(diff)
+        if self.last_average > 0:
+            if self.last_average < average:
+                self.point += (average - self.last_average) / min / 5
+            else:
+                self.point += (average - self.last_average) / min * 10
+        self.last_average = average
+
+    def finalize(self):
+        if self.diff:
+            average = sum(self.diff) / len(self.diff)
+            dist = sum([(average - d) ** 2 for d in self.diff])
+            devi = math.sqrt(dist)
+            self.point -= devi
+
+    def get_kcom_code(self):
+        return (self.code.replace('-', '.')
+                .replace('.O', '.OS')
+                .replace('.J', '.OS'))
+
+    def get_kcom_url(self):
+        return ('http://s20.si0.kabu.co.jp/Members/Tradetool/investment_info/?'
+                + 'trid=600&trric=' + self.get_kcom_code())
+
+
+class StockMap(object):
+    def __init__(self):
+        self.map = {}
+
+    def read(self, csvfile):
+        for row in csv.reader(open(csvfile)):
+            try:
+                code = row[0]
+                name = row[1].decode('sjis')
+                max = int(row[5])
+                min = int(row[6])
+                turnover = int(row[8])
+            except (IndexError, ValueError):
+                continue
+            if code not in self.map:
+                self.map[code] = Stock(code, name)
+            self.map[code].add(min, max, turnover)
+
+    def finalize(self):
+        for code in self.map:
+            self.map[code].finalize()
+
+    def get_ranking(self, limit = 10):
+        codes = self.map.keys()
+        codes.sort(lambda a, b: int(self.map[b].point - self.map[a].point))
+        return [self.map[c] for c in codes[0:limit]]
+
+
+def _main():
+    options, args = parse_args(sys.argv[1:])
+    workdir = options.workdir
+    sources = [DataSource(d, workdir) for d in get_dates(time.time())]
+    remove_old_files(sources, workdir)
+    stock_map = StockMap()
+    for s in sources:
+        if not s.is_fetched():
+            s.fetch()
+        stock_map.read(s.path)
+    stock_map.finalize()
+    for s in stock_map.get_ranking():
+        print s.name, s.get_kcom_url()
+
+if __name__ == '__main__':
+    _main()
