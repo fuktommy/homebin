@@ -124,9 +124,8 @@ class Stock(object):
         if self.last_average > 0:
             diff = (average - self.last_average) / self.last_average
             self.diff.append(diff)
-            if diff > 0:
-                self.point += diff * self.count
-            else:
+            self.point += (max - average) / average * self.count
+            if diff < 0:
                 self.point += diff * self.count * 2
         self.last_average = average
         self.last_min = min
