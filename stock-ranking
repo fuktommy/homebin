@@ -74,7 +74,10 @@ class DataSource(object):
         return os.path.isfile(self.path)
 
     def fetch(self):
+        sys.stderr.write('fetching %s\n' % self.url)
         buf = urllib2.urlopen(self.url).read()
+        if not buf.startswith(self.date):
+            sys.stderr.write('skip %s\n' % self.url)
         if not os.path.isdir(self.workdir):
             os.makedirs(self.workdir)
         open(self.path, 'w').write(buf)
@@ -99,7 +102,9 @@ def remove_old_files(sources, workdir):
     expected_files = [s.basename for s in sources]
     for f in os.listdir(workdir):
         if f not in expected_files:
-            os.remove(os.path.join(workdir, f))
+            path = os.path.join(workdir, f)
+            sys.stderr.write('removing %s\n' % path)
+            os.remove(path)
 
 
 class Stock(object):
@@ -137,7 +142,7 @@ class Stock(object):
             average = sum(self.diff) / len(self.diff)
             dist = sum([(average - d) ** 2 for d in self.diff])
             devi = math.sqrt(dist)
-            self.point -= devi * 1
+            self.point -= devi * len(self.diff) / 10
 
     def get_kcom_code(self):
         return (self.code.replace('-', '.')
@@ -197,7 +202,8 @@ def _main():
     for s in sources:
         if options.do_fetch and not s.is_fetched():
             s.fetch()
-        stock_map.read(s.path)
+        if s.is_fetched():
+            stock_map.read(s.path)
     stock_map.finalize()
     for s in stock_map.get_ranking():
         print s.point, s.name, s.get_kcom_url()
