@@ -1,0 +1,109 @@
+#!/usr/bin/python
+"""Check Apache HTTPD settings to block dynamic contents.
+"""
+#
+# Copyright (c) 2013 Satoshi Fukutomi <info@fuktommy.com>.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHORS AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHORS OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#
+
+import os
+import stat
+import urllib2
+
+check_list = [
+    #{'path': '/srv/www/fuktommy.com/x.%%',
+    # 'url': 'http://fuktommy.com/x.%%'},
+
+    {'path': '/srv/www/archive.shingetsu.info/x.%%',
+     'url': 'http://archive.shingetsu.info/x.%%'},
+
+    {'path': '/srv/www/blog.fuktommy.com/img/x.%%',
+     'url': 'http://blog.fuktommy.com/img/x.%%'},
+
+    {'path': '/srv/www/blog.fuktommy.com/img/x.%%',
+     'url': 'http://blog.fuktommy.com/img/x.%%'},
+
+    {'path': '/srv/saku/cache/'
+        + 'thread_E696B0E69C88E381AEE9968BE799BA/attach/'
+        + '1000000000_00000000000000000000000000000000.%%',
+     'url': 'http://bbs.shingetsu.info/thread.cgi/'
+        + 'thread_E696B0E69C88E381AEE9968BE799BA/'
+        + '00000000000000000000000000000000/1000000000.%%'},
+]
+
+
+class Checker(object):
+    suffixes = []
+    script = ''
+
+    def check(self, basepath, baseurl):
+        for suffix in self.suffixes:
+            path = basepath.replace('%%', suffix)
+            url = baseurl.replace('%%', suffix)
+            self._do_check(path, url)
+
+    def chmod(self, path):
+        pass
+
+    def _do_check(self, path, url):
+        if os.path.exists(path):
+            raise EnvironmentError('%s exists')
+        open(path, 'w').write(self.script)
+        self.chmod(path)
+        buffer = urllib2.urlopen(url).read()
+        if 'echo' not in buffer:
+            print 'WARNING: %s -> %s' % (url, buffer.strip())
+        os.remove(path)
+
+
+class CGIChecker(Checker):
+    suffixes = ['cgi', 'CGI']
+
+    script = '''#!/bin/sh
+echo "Contents-Type: text/plain"
+echo
+echo 123
+'''
+
+    def chmod(self, path):
+        os.chmod(path, stat.S_IROTH|stat.S_IXOTH)
+
+
+class PHPChecker(Checker):
+    suffixes = ['php', 'PHP', 'php3', 'php4', 'php5', 'php6',
+                'pht', 'phtml']
+    script = '<?php echo 123;'
+
+
+def _main():
+    for checker in [PHPChecker(), CGIChecker()]:
+        for settings in check_list:
+            try:
+                checker.check(settings['path'], settings['url'])
+            except StandardError, e:
+                print 'ERROR', e
+
+
+if __name__ == '__main__':
+    _main()
