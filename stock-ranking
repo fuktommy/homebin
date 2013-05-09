@@ -111,38 +111,46 @@ class Stock(object):
     def __init__(self, code, name):
         self.code = code
         self.name = name
-        self.count = 10
         self.point = 0
+        self.count = 0
+        self.sum = 0
+        self.index = 10
         self.last_average = -1
-        self.last_min = -1
-        self.last_max = -1
-        self.diff = []
+        self.history = []
 
     def add(self, min, max, turnover, sales):
         if min < 100:
             self.point -= 10000
             return
-        if turnover / min < 1000:
+        if turnover / min < 10:
             self.point -= 10000
             return
         average = sales / turnover
         if self.last_average > 0:
             diff = (average - self.last_average) / self.last_average
-            self.diff.append(diff)
-            self.point += (max - average) / average * self.count
+            self.history.append(diff)
+            self.sum += abs(diff)
+            self.count += 1
+            self.index += 1
+            if self.sum > 0:
+                point = diff / (self.sum / self.count) * self.index
+            else:
+                point = 0
             if diff < 0:
-                self.point += diff * self.count * 2
+                self.point += point * 2
+            else:
+                self.point += point
         self.last_average = average
         self.last_min = min
         self.last_max = max
         self.count += 1
 
     def finalize(self):
-        if self.diff:
-            average = sum(self.diff) / len(self.diff)
-            dist = sum([(average - d) ** 2 for d in self.diff])
+        if self.history:
+            average = sum(self.history) / len(self.history)
+            dist = sum([(average - d) ** 2 for d in self.history])
             devi = math.sqrt(dist)
-            self.point -= devi * len(self.diff) / 10
+            self.point -= devi * self.index * 10
 
     def get_kcom_code(self):
         return (self.code.replace('-', '.')
