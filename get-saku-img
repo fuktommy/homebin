@@ -26,6 +26,8 @@ for d in subdirs(fromdir):
         continue
     for f in os.listdir(d):
         frompath = os.path.join(d, f)
+        if re.search(r'^s\d+_[0-9a-f+]{32}[.]\d+x\d+[.][^.]+$', f):
+            continue
         found = re.search(r'^\d+_([0-9a-f]{32})\.([^.]+)$', f)
         if found:
             f = '%sx.%s' % (found.group(1)[:8], found.group(2))
