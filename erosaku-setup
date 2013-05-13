@@ -1,2 +1,0 @@
-#!/bin/sh
-rsync -av $HOME/devel/saku/ $HOME/../Documents/erosaku/
