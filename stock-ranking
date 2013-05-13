@@ -192,7 +192,7 @@ class StockMap(object):
         for code in self.map:
             self.map[code].finalize()
 
-    def get_ranking(self, limit = 10):
+    def get_ranking(self, limit = 30):
         codes = self.map.keys()
         codes.sort(lambda a, b:
             int((self.map[b].point - self.map[a].point) * 1000))
