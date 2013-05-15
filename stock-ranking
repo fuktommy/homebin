@@ -214,7 +214,7 @@ def _main():
             stock_map.read(s.path)
     stock_map.finalize()
     for s in stock_map.get_ranking():
-        print s.point, s.name, s.get_kcom_url()
+        print int(s.point), s.name, s.get_kcom_url()
 
 if __name__ == '__main__':
     _main()
