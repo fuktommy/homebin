@@ -121,7 +121,7 @@ class Stock(object):
     def __init__(self, code, name):
         self.code = code
         self.name = name
-        self._ratio = None
+        self._ratio = {}
         self.label = 0
         self.vectors = []
 
@@ -138,8 +138,8 @@ class Stock(object):
             return int(str)
 
     def get_ratio(self, day_sub = 0):
-        if self._ratio is not None:
-            return self._ratio
+        if day_sub in self._ratio is not None:
+            return self._ratio[day_sub]
         try:
             min0 = self.vectors[-1 - day_sub][-4]
             sales0 = self.vectors[-1 - day_sub][-1]
@@ -149,14 +149,14 @@ class Stock(object):
             turnover1 = self.vectors[-2 - day_sub][-2]
 
             if min(min0, min1) < 100:
-                self._ratio = 0
-                return self._ratio
+                self._ratio[day_sub] = 0
+                return self._ratio[day_sub]
 
-            self._ratio = (sales0 / turnover0) / (sales1 / turnover1)
-            return self._ratio
+            self._ratio[day_sub] = (sales0 / turnover0) / (sales1 / turnover1)
+            return self._ratio[day_sub]
         except (IndexError, ValueError, ZeroDivisionError):
-            self._ratio = 0
-            return self._ratio
+            self._ratio[day_sub] = 0
+            return self._ratio[day_sub]
 
     def _get_kcom_code(self):
         return (self.code.replace('-', '.')
@@ -188,13 +188,13 @@ class StockMap(object):
 
     def _flatten(self, vectors):
         ret = []
-        first = None
+        prev = None
         for vector in vectors:
-            if not first:
-                first = vector
-                continue
-            ret.extend([vector[i] / first[i] for i in range(len(first))])
-
+            v = vector[:]
+            v.append(v[-1] / v[-2])
+            if prev:
+                ret.extend([v[i] / prev[i] for i in range(len(prev))])
+            prev = v
         return ret
 
     def run_svm(self, threshold, test_mode):
@@ -233,14 +233,14 @@ class StockMap(object):
         if not test_mode:
             ref_labels = [-1 for i in correct_data]
 
-        print ('%d items. %d items has large ratio.' %
-            (len(codes), threshold_count))
+        print ('%d items. %d items has ratio larger than %f.' %
+            (len(codes), threshold_count, threshold))
         if test_mode:
-            print ('%d items has large ratio in test data.' %
-                threshold_count_ref)
+            print ('%d items has ratio larger than %f. in test data.' %
+                (threshold_count_ref, threshold))
 
         problem = svm.svm_problem(train_labels, train_data)
-        parameter = svm.svm_parameter('-s 0 -t 0 -h 0')
+        parameter = svm.svm_parameter('-s 0 -t 2 -h 0')
         t = svmutil.svm_train(problem, parameter)
         result = svmutil.svm_predict(ref_labels, correct_data, t)
         i = 0
