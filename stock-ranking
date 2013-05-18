@@ -33,6 +33,7 @@ import csv
 import math
 import optparse
 import os
+import re
 import sys
 import time
 import urllib2
@@ -114,7 +115,7 @@ class Stock(object):
         self.point = 0
         self.count = 0
         self.sum = 0
-        self.index = 10
+        self.weight = 1
         self.last_average = -1
         self.history = []
 
@@ -122,18 +123,18 @@ class Stock(object):
         if min < 100:
             self.point -= 10000
             return
-        if turnover / min < 10:
-            self.point -= 10000
-            return
+        #if turnover / min < 10:
+        #    self.point -= 10000
+        #    return
         average = sales / turnover
         if self.last_average > 0:
             diff = (average - self.last_average) / self.last_average
             self.history.append(diff)
             self.sum += abs(diff)
             self.count += 1
-            self.index += 1
+            self.weight *= 1.1
             if self.sum > 0:
-                point = diff / (self.sum / self.count) * self.index
+                point = diff / (self.sum / self.count) * self.weight
             else:
                 point = 0
             if diff < 0:
@@ -150,7 +151,7 @@ class Stock(object):
             average = sum(self.history) / len(self.history)
             dist = sum([(average - d) ** 2 for d in self.history])
             devi = math.sqrt(dist)
-            self.point -= devi * self.index * 10
+            self.point -= devi * self.weight * 10
 
     def get_kcom_code(self):
         return (self.code.replace('-', '.')
@@ -183,6 +184,8 @@ class StockMap(object):
                 turnover = self._strtoint(row[8])
                 sales = self._strtoint(row[9])
             except (IndexError, ValueError):
+                continue
+            if not re.search(r'\d+-[A-Z]+', code):
                 continue
             if code not in self.map:
                 self.map[code] = Stock(code, name)
