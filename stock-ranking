@@ -117,6 +117,7 @@ class Stock(object):
         self.sum = 0
         self.weight = 1
         self.last_average = -1
+        self.first_average = -1
         self.history = []
 
     def add(self, min, max, turnover, sales):
@@ -127,8 +128,10 @@ class Stock(object):
         #    self.point -= 10000
         #    return
         average = sales / turnover
-        if self.last_average > 0:
-            diff = (average - self.last_average) / self.last_average
+        if self.first_average <= 0:
+            self.first_average = average
+        else:
+            diff = (average - self.last_average) / self.first_average
             self.history.append(diff)
             self.sum += abs(diff)
             self.count += 1
@@ -147,11 +150,12 @@ class Stock(object):
         self.count += 1
 
     def finalize(self):
-        if self.history:
-            average = sum(self.history) / len(self.history)
-            dist = sum([(average - d) ** 2 for d in self.history])
+        if len(self.history) >= 2:
+            history = self.history[:-1]
+            average = sum(history) / len(history)
+            dist = sum([(average - d) ** 2 for d in history])
             devi = math.sqrt(dist)
-            self.point -= devi * self.weight * 10
+            self.point -= devi * self.weight * 30
 
     def get_kcom_code(self):
         return (self.code.replace('-', '.')
