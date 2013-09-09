@@ -1,10 +1,69 @@
 #!/usr/bin/python
+import optparse
 import sys
-from math import log
+import unittest
 
-x = int(sys.argv[1])
-y = int(sys.argv[2])
-for i in range(9):
-    if 2**i == y-x+1:
-        print 8-i
-        break
+
+def parse_args(argv):
+    """Parse command line argments.
+    """
+    usage = 'usage: %prog [options] ip_address_from - ip_address_to'
+    parser = optparse.OptionParser(usage=usage)
+    parser.add_option('--test', action='callback', callback=_test,
+                      help='run test and exit')
+    return parser.parse_args(argv)
+
+
+def get_netmask(addr_from, addr_to):
+    base = []
+    mask = 0
+    parts_from = addr_from.split('.')
+    parts_to = addr_to.split('.')
+    if len(parts_from) != 4 or len(parts_to) != 4:
+        raise ValueError('invalid argument %s or %s' % (addr_from, addr_to))
+    for i in range(0, 4):
+        x = int(parts_from[i])
+        y = int(parts_to[i])
+        base.append(str(x))
+        if x == y:
+            mask += 8
+        else:
+            for j in range(9):
+                if 2**j == y - x + 1:
+                    mask += 8 - j
+    return '%s/%d' % ('.'.join(base), mask)
+
+class GetNetmaskTest(unittest.TestCase):
+    def test_get_netmask_1(self):
+        actual = get_netmask('10.1.1.0', '10.1.1.255')
+        self.assertEquals('10.1.1.0/24', actual)
+
+    def test_get_netmask_2(self):
+        actual = get_netmask('10.1.76.0', '10.1.79.255')
+        self.assertEquals('10.1.76.0/22', actual)
+
+    def test_get_netmask_invalid_argument(self):
+        try:
+            get_netmask('10.1.76', '10.1.79.255')
+            self.fail()
+        except ValueError:
+            pass
+
+
+def _test(option, opt_str, value, parser, *args, **kwargs):
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.makeSuite(GetNetmaskTest))
+    result = unittest.TextTestRunner(verbosity=2).run(suite)
+    if result.errors or result.failures:
+        sys.exit(1)
+    else:
+        sys.exit()
+
+def _main():
+    options, args = parse_args(sys.argv[1:])
+    if len(args) != 3:
+       parse_args(['--help'])
+    print get_netmask(args[0], args[2])
+
+if __name__ == '__main__':
+    _main()
