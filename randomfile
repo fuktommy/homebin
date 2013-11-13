@@ -2,7 +2,7 @@
 """Choice random files from directory trees and make link to them.
 """
 #
-# Copyright (c) 2012 Satoshi Fukutomi <info@fuktommy.com>.
+# Copyright (c) 2012,2013 Satoshi Fukutomi <info@fuktommy.com>.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -51,7 +51,10 @@ def parse_args(argv):
                       help='make symbolic link instead of hard link')
     parser.add_option('-l', '--all-leaf', dest='all_leaf',
                       default=False, action='store_true',
-                      help='select all child files in selected directories')
+                      help='select all child file in selected directories')
+    parser.add_option('-t', '--all-tree', dest='all_tree',
+                      default=False, action='store_true',
+                      help='select from all file in tree')
     parser.add_option('-n', '--dry-run', dest='dryrun',
                       default=False, action='store_true',
                       help='no action')
@@ -122,7 +125,7 @@ class VideoFilter(object):
         return False
 
 
-def search_dir(dir, rate, filter, all_leaf_mode=False):
+def search_dir(dir, rate, filter, all_leaf_mode=False, all_tree_mode=False):
     dirs = []
     files = []
     for f in os.listdir(dir):
@@ -136,14 +139,15 @@ def search_dir(dir, rate, filter, all_leaf_mode=False):
             dirs.append(f)
             continue
 
-    dirs = random.sample(dirs, int(math.ceil(len(dirs) * rate / 100)))
+    if not all_tree_mode:
+        dirs = random.sample(dirs, int(math.ceil(len(dirs) * rate / 100)))
     dirs.sort()
     if not all_leaf_mode:
         files = random.sample(files, int(math.ceil(len(files) * rate / 100)))
     files.sort()
 
     for d in dirs:
-        files.extend(search_dir(d, rate, filter, all_leaf_mode))
+        files.extend(search_dir(d, rate, filter, all_leaf_mode, all_tree_mode))
     return files
 
 
@@ -159,7 +163,8 @@ def main():
             os.path.abspath(dir),
             options.rate,
             filter,
-            all_leaf_mode=options.all_leaf)
+            all_leaf_mode=options.all_leaf,
+            all_tree_mode=options.all_tree)
         src_files.extend(files)
 
     print "generating %d links..." % len(src_files)
