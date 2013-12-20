@@ -1,0 +1,6 @@
+#!/bin/sh -e
+wget -O - -q \
+  --post-data "nickname=$1&body=$2" \
+  --header='X-Requested-With: xmlhttprequest' \
+  --referer=http://todo.fuktommy.com/  \
+  http://todo.fuktommy.com/add
