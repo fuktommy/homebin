@@ -8,12 +8,12 @@ This script generates foo.html when foo.txt is newer than it.
 
 Options:
     -f: force genarate
-    -n: do not validate html
+    -v: validate html
     -I dir: specify include dir (for template files)
 
 Example:
     htmlpp index.txt
-    htmlpp -f -n index.txt
+    htmlpp -f -v index.txt
 
 Contents of file:
     >command arguments
@@ -37,7 +37,7 @@ Commands:
 ``>>>command'' is same as ``>command''.
 """
 #
-# Copyright (c) 2005-2007 Satoshi Fukutomi <info@fuktommy.com>.
+# Copyright (c) 2005-2014 Satoshi Fukutomi <info@fuktommy.com>.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -62,13 +62,12 @@ Commands:
 # SUCH DAMAGE.
 #
 
+import cgi
 import csv
-import os
+import optparse
+import os.path
 import re
 import sys
-import cgi
-import xml.dom.minidom
-import xml.parsers.expat
 
 #
 # Configuration
@@ -425,7 +424,6 @@ def generate_html(txt, html, incdir, force=False):
     f_html = file(html, "w")
     f_html.write(htmldata)
     f_html.close()
-    #os.utime(html, (date_txt+1, date_txt+1))
     return htmldata
 
 
@@ -434,6 +432,8 @@ def validate(htmldata):
 
     Now it only checks valid XML or not.
     '''
+    import xml.dom.minidom
+    import xml.parsers.expat
     try:
         found = re.search(r'^\s*<\?xml[^<>]*\?>', htmldata)
         if found:
@@ -455,43 +455,42 @@ def validate(htmldata):
         return False
 
 
+def parse_args(argv):
+    usage = 'usage: %prog [options] [files...]'
+    parser = optparse.OptionParser(usage=usage)
+    parser.add_option('-f', '--force', dest='force',
+                      default=False, action='store_true',
+                      help='force genarate')
+    parser.add_option('-v', '--validate-html', dest='validate',
+                      default=False, action='store_true',
+                      help='validate html')
+    parser.add_option('-I', '--include-dir', dest='include_dir',
+                      action='append',
+                      help='specify include dir (for template files)')
+    return parser.parse_args(argv)
+
+
 def main():
-    txtfile = []
-    flag_force = False
-    flag_validate = True
-    sys.argv.pop(0)
-    idir = []
-    cdir = []
-    hlopt = []
-    while len(sys.argv) > 0:
-        i = sys.argv.pop(0)
-        if i == "--":
-            txtfile += sys.argv
-        elif i == "-I":
-            idir.append(sys.argv.pop(0))
-        elif i == "-f":
-            flag_force = True
-        elif i == "-n":
-            flag_validate = False
-        else:
-            txtfile.append(i)
-    incdir = idir + include_dir
-
-    if len(txtfile) == 0:
-        sys.exit("htmlpp [-f] [-n] [-I dir]... foo.txt...")
-
+    options, txtfile = parse_args(sys.argv[1:])
+    if not txtfile:
+        parse_args(['--help'])
+    if options.include_dir:
+        incdir = options.include_dir + include_dir
+    else:
+        incdir = include_dir
+ 
     for txt in txtfile:
         html = re.sub(r"\.[^.]*$", ".html", txt)
-        htmldata = generate_html(txt, html, incdir, force=flag_force)
-        if htmldata is not None:
-            print '%s:' % txt,
-            if not flag_validate:
-                print 'pass'
-            elif validate(htmldata):
-                print 'OK'
-            else:
-                print 'stop'
-                sys.exit(1)
+        htmldata = generate_html(txt, html, incdir, force=options.force)
+        if htmldata is None:
+            continue
+        if not options.validate:
+            print txt
+        elif validate(htmldata):
+            print '%s: valid' % txt
+        else:
+            print '%s: stop' % txt
+            sys.exit(1)
                 
 if __name__ == "__main__":
     main()
