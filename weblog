@@ -17,8 +17,13 @@ cat /var/log/apache2/$1.access.log.1 \
     /var/log/apache2/$1.access.log \
     | sed 's/^\S*\s//' \
     > $DIR/tmp.log
+webazolver -o $DIR \
+    -D dnscache.bdb \
+    -r fuktommy.com -r shingetsu.info \
+    -v -i -n $* \
+    $DIR/tmp.log
 webalizer -o $DIR \
-    -D $DIR/dnscache.bdb \
+    -D dnscache.bdb \
     -r fuktommy.com -r shingetsu.info \
     -v -i -n $* \
     $DIR/tmp.log
