@@ -36,7 +36,7 @@ import urllib.parse
 import urllib.request
 import xml.etree.ElementTree
 
-__all__ = ['AlertLoginInfo', 'CommentServerApi', 'Subscription', 'WebApi']
+__all__ = ['AlertLoginInfo', 'NicoAlert', 'Subscription']
 
 NICO_LOGIN_URL = 'https://secure.nicovideo.jp/secure/login?site=nicoalert';
 ALERT_LOGIN_URL = 'http://api.alert.nicovideo.jp/v2/login'
@@ -129,7 +129,7 @@ class CommentServerApi:
     def connect(self, address, port):
         self.processing = True
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.settimeout(30)
+        self.socket.settimeout(120)
         self.socket.connect((address, port))
 
     def join_thread(self, thread_id):
@@ -153,6 +153,23 @@ class CommentServerApi:
                 buf = buf[found.end():]
                 yield json.loads(found.group(1))
 
+class NicoAlert:
+    def connect(self, mail, password):
+        webapi = WebApi()
+        ticket = webapi.login_account(mail, password)
+        self.login_info = webapi.login_alert(ticket)
+        self.subscriptions = webapi.get_subscriptions(
+            self.login_info.user_id, self.login_info.ticket)
+
+        self.comment_server = CommentServerApi()
+        self.comment_server.connect(
+            self.login_info.address, self.login_info.port)
+        for sub in self.subscriptions:
+            self.comment_server.join_thread(sub.thread_id)
+
+    def __iter__(self):
+        return iter(self.comment_server)
+
 
 def _parse_arg():
     import argparse
@@ -166,17 +183,10 @@ def _parse_arg():
 
 def _main():
     arg = _parse_arg()
-    webapi = WebApi()
-    ticket = webapi.login_account(arg.mail, arg.password)
-    login_info = webapi.login_alert(ticket)
-    subscriptions = webapi.get_subscriptions(
-        login_info.user_id, login_info.ticket)
+    nicoalert = NicoAlert()
+    nicoalert.connect(arg.mail, arg.password)
 
-    comment_server = CommentServerApi()
-    comment_server.connect(login_info.address, login_info.port)
-    for sub in subscriptions:
-        comment_server.join_thread(sub.thread_id)
-    for message in comment_server:
+    for message in nicoalert:
         print(json.dumps(message, ensure_ascii=False, sort_keys=True, indent=4))
         if message['service'] == 'live':
             print(message['title'])
