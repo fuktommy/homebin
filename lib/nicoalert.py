@@ -69,8 +69,11 @@ class WebApi:
         request = urllib.request.Request(NICO_LOGIN_URL, post_data, headers)
         response = urllib.request.urlopen(request)
         login_xml = xml.etree.ElementTree.fromstring(response.read())
-        ticket = login_xml.find('./ticket').text
-        return ticket
+        ticket = login_xml.find('./ticket')
+        if ticket is not None:
+            return ticket.text
+        else:
+            raise ValueError(login_xml.find('./error/description').text)
 
     def login_alert(self, ticket):
         """Login alert server and return AlertLoginInfo.
