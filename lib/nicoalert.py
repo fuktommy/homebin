@@ -147,6 +147,10 @@ class CommentServerApi:
             except socket.timeout:
                 continue
             while True:
+                found = re.search(r'<thread.*?/>', buf)
+                if found:
+                    buf = buf[found.end():]
+                    continue
                 found = re.search(r'<chat.*?>(.*?)</chat>', buf)
                 if not found:
                     break
@@ -168,7 +172,18 @@ class NicoAlert:
             self.comment_server.join_thread(sub.thread_id)
 
     def __iter__(self):
-        return iter(self.comment_server)
+        for message in self.comment_server:
+            if message.get('providerType', '') == 'official':
+                yield message
+            for sub in self.subscriptions:
+                if message['service'] != sub.service:
+                    continue
+                elif (sub.user_id
+                    and message.get('userId', '') == sub.user_id):
+                    yield message
+                elif (sub.community_id
+                      and message.get('communityId', '') == sub.community_id):
+                    yield message
 
 
 def _parse_arg():
