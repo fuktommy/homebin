@@ -150,15 +150,16 @@ class CommentServerApi:
             except socket.timeout:
                 continue
             while True:
+                found = re.search(r'<chat.*?>(.*?)</chat>', buf)
+                if found:
+                    buf = buf[found.end():]
+                    yield json.loads(found.group(1))
+                    continue
                 found = re.search(r'<thread.*?/>', buf)
                 if found:
                     buf = buf[found.end():]
                     continue
-                found = re.search(r'<chat.*?>(.*?)</chat>', buf)
-                if not found:
-                    break
-                buf = buf[found.end():]
-                yield json.loads(found.group(1))
+                break
 
 class NicoAlert:
     def connect(self, mail, password):
