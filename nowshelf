@@ -1,0 +1,10 @@
+#!/bin/zsh -e
+
+id=`echo $1|sed 's/.*[/]//'`
+
+wget -nv --random-wait -nc \
+    --header="Accept-Encoding: gzip, compres, bzip, bzip2" \
+    --header="Accept-Language: ja; q=1.0, en;q=0.5" \
+    -U "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)" -w 2 \
+    --referer=http://nowshelf.com/comic/$id \
+    http://nowshelf.com/img/upload/comic/$id/img/{001..$2}.jpg
