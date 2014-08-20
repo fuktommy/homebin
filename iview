@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/bash -e
 
 IVIEW="/cygdrive/c/Program Files (x86)/IrfanView/i_view32.exe"
 TARGET="$1"
@@ -8,8 +8,13 @@ case $TARGET in
         ARG=/slideshow=$TARGET
     ;;
     ?*)
-        cd "$TARGET"/.
-        ARG=.\\
+        if [ -d "$TARGET" ]; then
+            cd "$TARGET"/.
+            ARG=.\\
+        else
+            cd `dirname "$TARGET"`
+            ARG=`basename "$TARGET"`
+        fi
     ;;
     *)
         ARG=.\\
