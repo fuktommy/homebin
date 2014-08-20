@@ -30,14 +30,14 @@ import subprocess
 
 target = [
     ('~/bin/.git', 'home-bin'),
-    ('~/devel/saku/.git', 'saku-ex'),
-    ('~/devel/saku-trunk/.git', 'saku-trunk'),
+    ('~/devel/saku/.git', 'saku'),
     ('~/fuk/backup/sakura/srv/git/genpasswd-android/.git', 'genpasswd'),
     ('~/fuk/backup/sakura/srv/git/IteratorPipe/.git', 'iteratorpipe'),
     ('~/fuk/backup/sakura/srv/sysconfig/.git', 'sysconfig'),
     ('~/fuk/backup/sakura/srv/stage/blogch3/.git', 'blogch3'),
     ('~/fuk/backup/sakura/srv/stage/fuktommy/.git', 'fuktommy.com'),
     ('~/fuk/backup/sakura/srv/stage/gplusfeed/.git', 'gplusfeed'),
+    ('~/fuk/backup/sakura/srv/stage/item/.git', 'item'),
     ('~/fuk/backup/sakura/srv/stage/private/.git', 'private'),
     ('~/fuk/backup/sakura/srv/stage/shingetsu/.git', 'shingetsu.info'),
     ('~/fuk/backup/sakura/srv/stage/todorss/.git', 'todorss'),
