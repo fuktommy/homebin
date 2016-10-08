@@ -1,0 +1,16 @@
+#!/bin/sh -e
+set -e
+
+if [ "x$1" = x ]; then
+    echo "usage $0 branch-name [base-branch]" 1>&2
+    exit 1
+fi
+BRANCH=$1
+BASE=${2:-master}
+TIMESTAMP=`date +%Y%m%d%H%M%S`
+
+git checkout $BASE
+git pull --prune
+git branch -m $BRANCH ${BRANCH}_${TIMESTAMP}
+git checkout -b $BRANCH
+git merge --squash ${BRANCH}_${TIMESTAMP}
