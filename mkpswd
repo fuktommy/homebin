@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 import base64
 import hashlib
 import sys
@@ -8,9 +8,9 @@ if len(sys.argv) != 2:
 else:
     filename = sys.argv[1]
 
-f = file(filename)
+f = open(filename, 'rb')
 buf = f.read()
 f.close()
 digest = hashlib.md5(buf).digest()
-passwd = base64.encodestring(digest).replace("=", "")
-print passwd,
+passwd = base64.b64encode(digest).decode('ascii').replace("=", "")
+print(passwd)

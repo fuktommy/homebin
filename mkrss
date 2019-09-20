@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 """Make RSS for file list.
 
 It requires rss.py by Fuktommy.
@@ -30,7 +30,7 @@ Text file:
 """
 
 #
-# Copyright (c) 2005-2012 Satoshi Fukutomi <info@fuktommy.com>.
+# Copyright (c) 2005-2019 Satoshi Fukutomi <info@fuktommy.com>.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -55,13 +55,13 @@ Text file:
 # SUCH DAMAGE.
 #
 
-import HTMLParser
 import fileinput
 import os
 import subprocess
 import sys
 import re
 import time
+from html.parser import HTMLParser
 
 import rss      # module written by Fuktommy
 
@@ -101,7 +101,7 @@ def read_header(f):
     del_eof = re.compile(r'[\r\n]*')
     last = ""
     conf = {}
-    for line in file(f):
+    for line in open(f):
         if line == "\n":
             continue
         elif re_iscomment.search(line):
@@ -137,7 +137,7 @@ def read_text(f):
     Following line is description.
     """
 
-    txt = file(f + ".txt")
+    txt = open(f + ".txt")
     title = txt.readline()
     desc = ''
     for line in txt:
@@ -145,7 +145,7 @@ def read_text(f):
     txt.close()
     return (title, desc)
 
-class HtmlReader(HTMLParser.HTMLParser):
+class HtmlReader(HTMLParser):
     """Read from HTML.
 
     Use <title> tag and <meta name="description"...> tag.
@@ -161,7 +161,7 @@ class HtmlReader(HTMLParser.HTMLParser):
     def __init__(self):
         """Constructor."""
 
-        HTMLParser.HTMLParser.__init__(self)
+        HTMLParser.__init__(self)
         self.attrs = {"title": "", "description": ""}
         self.now = ""
         self.encode = encode
@@ -209,7 +209,7 @@ class HtmlReader(HTMLParser.HTMLParser):
         """Return title and description."""
 
         for k in ("title", "description"):
-            data = unicode(self.attrs[k], self.encode).encode(encode)
+            data = self.attrs[k]
             self.attrs[k] = self.del_space.sub("", data, 0)
         return (self.attrs["title"], self.attrs["description"])
 
@@ -218,7 +218,7 @@ def read_html(f):
 
     Wrapper of HtmlReader.
     """
-    html = file(f)
+    html = open(f)
     parser = HtmlReader()
     parser.feed(html.read())
     (title, description) = parser.getData()

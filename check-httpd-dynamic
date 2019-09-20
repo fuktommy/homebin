@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 """Check Apache HTTPD settings to block dynamic contents.
 """
 #
@@ -29,13 +29,13 @@
 
 import os
 import stat
-import urllib2
+import urllib.request
 
 check_list = [
     #{'path': '/srv/www/fuktommy.com/x.%%',
     # 'url': 'http://fuktommy.com/x.%%'},
 
-    {'path': '/srv/www/archive.shingetsu.info/x.%%',
+    {'path': '/srv/www/archive.shingetsu.info/data/x.%%',
      'url': 'http://archive.shingetsu.info/x.%%'},
 
     {'path': '/srv/www/blog.fuktommy.com/img/x.%%',
@@ -68,12 +68,12 @@ class Checker(object):
 
     def _do_check(self, path, url):
         if os.path.exists(path):
-            raise EnvironmentError('%s exists')
+            raise EnvironmentError('%s exists' % path)
         open(path, 'w').write(self.script)
         self.chmod(path)
-        buffer = urllib2.urlopen(url).read()
+        buffer = urllib.request.urlopen(url).read().decode('utf8')
         if 'echo' not in buffer:
-            print 'WARNING: %s -> %s' % (url, buffer.strip())
+            print('WARNING: %s -> %s' % (url, buffer.strip()))
         os.remove(path)
 
 
@@ -101,8 +101,8 @@ def _main():
         for settings in check_list:
             try:
                 checker.check(settings['path'], settings['url'])
-            except StandardError, e:
-                print 'ERROR', e
+            except Exception as e:
+                print('ERROR', settings['url'], e)
 
 
 if __name__ == '__main__':

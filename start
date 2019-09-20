@@ -6,9 +6,10 @@ else
     CHMOD=""
 fi
 
-MAIN=`cygpath -w $1`
+#MAIN=`cygpath -w $1`
+MAIN=$1
 shift
-cmd /c start "$MAIN" $*
+cmd.exe /c start "$MAIN" $*
 
 if [ $CHMOD ]; then
     chmod -x $MAIN

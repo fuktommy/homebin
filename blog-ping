@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 """Update Pinger
 
 Usage: blog-ping your-blog
@@ -9,7 +9,7 @@ Usage: blog-ping your-blog
 """
 # I read http://coreblog.org/ats/82 for using xmlrpclib.
 #
-# Copyright (c) 2005,2010 Satoshi Fukutomi <info@fuktommy.com>.
+# Copyright (c) 2005-2019 Satoshi Fukutomi <info@fuktommy.com>.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -38,11 +38,9 @@ import re
 import sys
 import random
 import socket
-import urllib
-import xmlrpclib
-from HTMLParser import HTMLParser
-
-__version__ = "$Revision$"
+import urllib.request
+import xmlrpc.client
+from html.parser import HTMLParser
 
 socket.setdefaulttimeout(10)
 
@@ -97,14 +95,13 @@ def read_list(fp):
 
 def get_title(url):
     """Get HTML and parse it."""
-    f = urllib.urlopen(url)
+    f = urllib.request.urlopen(url)
     buf = f.read()
     f.close()
     parser = MyHTMLParser()
-    parser.feed(buf)
+    parser.feed(buf.decode('utf8'))
     parser.close()
-    title = unicode(parser.title, parser.encoding).encode("utf-8")
-    return title
+    return parser.title
 
 #
 # Main
@@ -123,7 +120,7 @@ while argv:
         if filename == "-":
             servers.extend(read_list(sys.stdin))
         else:
-            f = file(filename)
+            f = open(filename)
             servers.extend(read_list(f))
             f.close()
     elif i == "-r":
@@ -148,16 +145,16 @@ if not isinstance(title, str):
 
 for i in servers:
     try:
-        print "Ping %s" % i
-        svr = xmlrpclib.ServerProxy(i)
+        print("Ping %s" % i)
+        svr = xmlrpc.client.ServerProxy(i)
         resp = svr.weblogUpdates.ping(title, myblog)
         flerror = resp.get("flerror", False)
         message = resp.get("message", "None")
         if flerror:
-            print "    Error: %s" % message
+            print("    Error: %s" % message)
         else:
-            print "    %s" % message
+            print("    %s" % message)
     except KeyboardInterrupt:
         sys.exit(1)
-    except Exception, err:
-        print "    Error: %s" % str(err)
+    except Exception as err:
+        print("    Error: %s" % str(err))

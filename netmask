@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 import optparse
 import sys
 import unittest
@@ -63,7 +63,7 @@ def _main():
     options, args = parse_args(sys.argv[1:])
     if len(args) != 3:
        parse_args(['--help'])
-    print get_netmask(args[0], args[2])
+    print(get_netmask(args[0], args[2]))
 
 if __name__ == '__main__':
     _main()

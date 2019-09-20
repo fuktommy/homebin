@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #
 """HTMLPP - Generate HTML like as CPP.
 
@@ -37,7 +37,7 @@ Commands:
 ``>>>command'' is same as ``>command''.
 """
 #
-# Copyright (c) 2005-2014 Satoshi Fukutomi <info@fuktommy.com>.
+# Copyright (c) 2005-2019 Satoshi Fukutomi <info@fuktommy.com>.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -382,7 +382,7 @@ class HTML:
         return buf
 
     def read_file(self):
-        return self.read(file(self.txt))
+        return self.read(open(self.txt))
 
     def header_file(self, head, check_loop=True):
         """Search header file (template).
@@ -400,7 +400,7 @@ class HTML:
         if path == "":
             sys.exit(" %s: not found\n" % head)
         elif check_loop and (path in self.loop):
-            print ' %s: loop' % path
+            print(' %s: loop' % path)
             return ''
         else:
             self.loop += [path]
@@ -421,7 +421,7 @@ def generate_html(txt, html, incdir, force=False):
     parthtml = HTML(txt, incdir=incdir)
     htmldata = parthtml.read_file()
 
-    f_html = file(html, "w")
+    f_html = open(html, "w")
     f_html.write(htmldata)
     f_html.close()
     return htmldata
@@ -450,8 +450,8 @@ def validate(htmldata):
             htmldata = xmlhead + xmlbody
         xml.dom.minidom.parseString(htmldata)
         return True
-    except (xml.parsers.expat.ExpatError, UnicodeDecodeError, LookupError), e:
-        print e
+    except (xml.parsers.expat.ExpatError, UnicodeDecodeError, LookupError) as e:
+        print(e)
         return False
 
 
@@ -485,11 +485,11 @@ def main():
         if htmldata is None:
             continue
         if not options.validate:
-            print txt
+            print(txt)
         elif validate(htmldata):
-            print '%s: valid' % txt
+            print('%s: valid' % txt)
         else:
-            print '%s: stop' % txt
+            print('%s: stop' % txt)
             sys.exit(1)
                 
 if __name__ == "__main__":
