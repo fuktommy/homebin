@@ -1,7 +1,0 @@
-#!/bin/sh
-rsync --delete -Cachv \
-    --exclude="- /cache" \
-    --exclude="- /log" \
-    --exclude="- /run" \
-    --exclude="*.pyc" \
-    $HOME/devel/saku/ sakura.fuktommy.com:/srv/saku/source
