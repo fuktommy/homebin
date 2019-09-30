@@ -1,0 +1,118 @@
+#!/usr/bin/python3
+"""Export Windows10 Spotlight Images.
+
+This script runs on WSL.
+"""
+#
+# Copyright (c) 2019 Satoshi Fukutomi <info@fuktommy.com>.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHORS AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHORS OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#
+
+import imghdr
+import optparse
+import os
+import shutil
+import sys
+
+def parse_args(argv):
+    usage = 'usage: %prog [options]'
+    parser = optparse.OptionParser(usage=usage)
+    parser.add_option('-o', '--output', dest='output_dir', metavar='DIR',
+                      default=None,
+                      help='distination directory')
+    parser.add_option('-n', '--dry-run', dest='dry_run',
+                      default=False, action='store_true',
+                      help='print paths without copying')
+    parser.add_option('-f', '--force-update', dest='force_update',
+                      default=False, action='store_true',
+                      help='force update when exported file exists')
+    parser.add_option('-v', '--verbose', dest='verbose',
+                      default=False, action='store_true',
+                      help='turn on verbose output')
+    return parser.parse_args(argv)
+
+def get_user_name():
+    user = os.getenv('USER')
+    if user is None:
+        sys.exit('environment variable USER is not set')
+    return user
+
+def get_src_dir():
+    packages = os.path.join(
+        '/mnt/c/Users', get_user_name(), 'AppData/Local/Packages')
+    prefix = 'Microsoft.Windows.ContentDeliveryManager_'
+    files = filter(lambda f: f.startswith(prefix), os.listdir(packages))
+    return os.path.join(packages, list(files)[0], 'LocalState/Assets')
+
+def get_dest_dir(options):
+    if options.output_dir is not None:
+        return options.output_dir
+    else:
+        return os.path.join(
+            '/mnt/c/Users', get_user_name(), 'Pictures/spotlight')
+
+def get_src_dest_pairs(src_dir):
+    pairs = []
+    files = os.listdir(src_dir)
+    for file in files:
+        src_path = os.path.join(src_dir, file)
+        suffix = imghdr.what(src_path)
+        if os.path.getsize(src_path) < 100000:
+            continue
+        elif suffix is None:
+            continue
+        elif suffix == 'jpeg':
+            suffix = 'jpg'
+        pairs.append((file, '%s.%s' % (file, suffix)))
+    return pairs
+
+def copy_files(src_dir, dest_dir, src_dest_pairs, options):
+    if not options.dry_run and not os.path.isdir(dest_dir):
+        os.makedirs(dest_dir)
+    for src, dest in src_dest_pairs:
+        src_path = os.path.join(src_dir, src)
+        dest_path = os.path.join(dest_dir, dest)
+        if os.path.exists(dest_path):
+            if options.verbose:
+                print('%s already exists.' % dest)
+            if not options.force_update:
+                continue
+        print('%s -> %s' % (src, dest))
+        if options.dry_run:
+            continue
+        shutil.copy2(src_path, dest_path)
+
+def main():
+    options, args = parse_args(sys.argv[1:])
+    src_dir = get_src_dir()
+    dest_dir = get_dest_dir(options)
+    if options.verbose:
+        print('exporting from %s' % src_dir)
+        print('exporting to %s' % dest_dir)
+    src_dest_pairs = get_src_dest_pairs(src_dir)
+    copy_files(src_dir, dest_dir, src_dest_pairs, options)
+
+
+if __name__ == '__main__':
+    main()
