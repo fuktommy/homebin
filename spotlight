@@ -35,6 +35,11 @@ import os
 import shutil
 import sys
 
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
+
 def parse_args(argv):
     usage = 'usage: %prog [options]'
     parser = optparse.OptionParser(usage=usage)
@@ -44,6 +49,12 @@ def parse_args(argv):
     parser.add_option('-n', '--dry-run', dest='dry_run',
                       default=False, action='store_true',
                       help='print paths without copying')
+    parser.add_option('-l', '--landscape-only', dest='landscape_only',
+                      default=False, action='store_true',
+                      help='export landscape only (require PIL)')
+    parser.add_option('-p', '--portrait-only', dest='portrait_only',
+                      default=False, action='store_true',
+                      help='export portrait only (require PIL)')
     parser.add_option('-f', '--force-update', dest='force_update',
                       default=False, action='store_true',
                       help='force update when exported file exists')
@@ -72,15 +83,23 @@ def get_dest_dir(options):
         return os.path.join(
             '/mnt/c/Users', get_user_name(), 'Pictures/spotlight')
 
-def get_src_dest_pairs(src_dir):
+def get_src_dest_pairs(src_dir, options):
     pairs = []
     files = os.listdir(src_dir)
     for file in files:
         src_path = os.path.join(src_dir, file)
         suffix = imghdr.what(src_path)
+        if Image:
+            width, height = Image.open(src_path).size
+        else:
+            width, height = 0, 0
         if os.path.getsize(src_path) < 100000:
             continue
         elif suffix is None:
+            continue
+        elif options.landscape_only and width < height:
+            continue
+        elif options.portrait_only and width > height:
             continue
         elif suffix == 'jpeg':
             suffix = 'jpg'
@@ -110,7 +129,7 @@ def main():
     if options.verbose:
         print('exporting from %s' % src_dir)
         print('exporting to %s' % dest_dir)
-    src_dest_pairs = get_src_dest_pairs(src_dir)
+    src_dest_pairs = get_src_dest_pairs(src_dir, options)
     copy_files(src_dir, dest_dir, src_dest_pairs, options)
 
 
