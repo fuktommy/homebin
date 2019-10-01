@@ -81,7 +81,7 @@ def get_dest_dir(options):
         return options.output_dir
     else:
         return os.path.join(
-            '/mnt/c/Users', get_user_name(), 'Pictures/spotlight')
+            '/mnt/c/Users', get_user_name(), 'Pictures/wallpaper/spotlight')
 
 def get_src_dest_pairs(src_dir, options):
     pairs = []
