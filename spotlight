@@ -88,21 +88,21 @@ def get_src_dest_pairs(src_dir, options):
     files = os.listdir(src_dir)
     for file in files:
         src_path = os.path.join(src_dir, file)
+        if os.path.getsize(src_path) < 100000:
+            continue
         suffix = imghdr.what(src_path)
+        if suffix is None:
+            continue
+        elif suffix == 'jpeg':
+            suffix = 'jpg'
         if Image:
             width, height = Image.open(src_path).size
         else:
             width, height = 0, 0
-        if os.path.getsize(src_path) < 100000:
-            continue
-        elif suffix is None:
-            continue
-        elif options.landscape_only and width < height:
+        if options.landscape_only and width < height:
             continue
         elif options.portrait_only and width > height:
             continue
-        elif suffix == 'jpeg':
-            suffix = 'jpg'
         pairs.append((file, '%s.%s' % (file, suffix)))
     return pairs
 
