@@ -58,6 +58,9 @@ def parse_args(argv):
     parser.add_option('-f', '--force-update', dest='force_update',
                       default=False, action='store_true',
                       help='force update when exported file exists')
+    parser.add_option('-c', '--clear-settings', dest='clear_settings',
+                      default=False, action='store_true',
+                      help='delete windows spotlight setting files')
     parser.add_option('-v', '--verbose', dest='verbose',
                       default=False, action='store_true',
                       help='turn on verbose output')
@@ -69,12 +72,18 @@ def get_user_name():
         sys.exit('environment variable USER is not set')
     return user
 
-def get_src_dir():
+def get_content_dir():
     packages = os.path.join(
         '/mnt/c/Users', get_user_name(), 'AppData/Local/Packages')
     prefix = 'Microsoft.Windows.ContentDeliveryManager_'
     files = filter(lambda f: f.startswith(prefix), os.listdir(packages))
-    return os.path.join(packages, list(files)[0], 'LocalState/Assets')
+    return os.path.join(packages, list(files)[0])
+
+def get_src_dir():
+    return os.path.join(get_content_dir(), 'LocalState/Assets')
+
+def get_settings_dir():
+    return os.path.join(get_content_dir(), 'Settings')
 
 def get_dest_dir(options):
     if options.output_dir is not None:
@@ -122,6 +131,19 @@ def copy_files(src_dir, dest_dir, src_dest_pairs, options):
             continue
         shutil.copy2(src_path, dest_path)
 
+def clear_settings(options):
+    dir = get_settings_dir()
+    files = ('roaming.lock', 'settings.dat')
+    for f in files:
+        path = os.path.join(dir, f)
+        if not os.path.exists(path):
+            if options.verbose:
+                print('%s does not exist.' % path)
+            continue
+        print('removing %s' % path)
+        if not options.dry_run:
+            os.remove(path)
+
 def main():
     options, args = parse_args(sys.argv[1:])
     src_dir = get_src_dir()
@@ -131,7 +153,8 @@ def main():
         print('exporting to %s' % dest_dir)
     src_dest_pairs = get_src_dest_pairs(src_dir, options)
     copy_files(src_dir, dest_dir, src_dest_pairs, options)
-
+    if options.clear_settings:
+        clear_settings(options)
 
 if __name__ == '__main__':
     main()
