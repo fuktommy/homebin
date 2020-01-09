@@ -1,0 +1,93 @@
+#!/usr/bin/python3
+"""Get nicovideo channel video ids and titles.
+"""
+#
+# Copyright (c) 2020 Satoshi Fukutomi <info@fuktommy.com>.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHORS AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHORS OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#
+
+import csv
+import optparse
+import re
+import sys
+from urllib.request import urlopen
+from xml.etree import ElementTree
+
+API_URL = 'https://ext.nicovideo.jp/api/getthumbinfo/'
+WATCH_URL = 'https://www.nicovideo.jp/watch/'
+
+def parse_args(argv):
+    usage = 'usage: %prog [options] videoid...'
+    parser = optparse.OptionParser(usage=usage)
+    return parser.parse_args(argv)
+
+class VideoInfo:
+    id = ''
+    title = ''
+
+class VideoFetcher:
+    fetched = {}
+
+    def fetch(self, id):
+        if id in self.fetched:
+            return []
+        xml = urlopen(API_URL + id).read().decode('utf8')
+        root = ElementTree.fromstring(xml)
+        video = VideoInfo()
+        video.id = root.find("./thumb/video_id").text
+        video.title = root.find("./thumb/title").text
+        self.fetched[id] = video
+        description = root.find("./thumb/description").text
+        nextIds = list(self._parse_description(description))
+        ret = [video]
+        for id in nextIds:
+            ret.extend(self.fetch(id))
+        return ret
+
+    def _parse_description(self, description):
+        pattern = re.compile(r'so[0-9]+|watch/[0-9]+')
+        while True:
+            found = pattern.search(description)
+            if not found:
+               break
+            description = description[found.end():]
+            yield found.group(0).replace('watch/', '')
+
+def print_videos(videos):
+    d = {}
+    for video in videos:
+        d[int(video.id[2:])] = video
+    w = csv.writer(sys.stdout, delimiter='\t')
+    for k in sorted(d.keys()):
+        w.writerow([d[k].id, d[k].title])
+
+def main():
+    options, args = parse_args(sys.argv[1:])
+    videos = []
+    for id in args:
+        videos.extend(VideoFetcher().fetch(id))
+    print_videos(videos)
+
+if __name__ == '__main__':
+    main()
