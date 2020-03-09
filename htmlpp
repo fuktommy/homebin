@@ -247,7 +247,7 @@ class HTML:
             if name in csv_cache:
                 rows = csv_cache[name]
             else:
-                for row in csv.reader(file(name)):
+                for row in csv.reader(open(name)):
                     rows.append(row)
                 csv_cache[name] = rows
 
@@ -307,7 +307,7 @@ class HTML:
             name = self.header_file(m_quote.group(1), False)
 
         buf = ""
-        text = file(name)
+        text = open(name)
         for i in text:
             buf += cgi.escape(i)
         buf = re.sub(r"[\r\n]*$", "", buf)
