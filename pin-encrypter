@@ -1,0 +1,130 @@
+#!/usr/bin/python3
+"""PIN Encrypter.
+
+It's a joke soft, not secure.
+
+usage: pin-encrypter [-e/-d] [-k secret_key] [-p pin]
+
+example:
+    $ pin-encrypter -e          # encode pin
+    Secret Key:My Password      # without echoback
+    PIN:1234                    # without echoback
+    1487                        # got your encrypred pin
+
+    $ pin-encrypter -d          # decode pin
+    Secret Key:My Password      # without echoback
+    PIN:1487                    # without echoback
+    0389                        # got your plain pin
+    1234
+    5392
+"""
+#
+# Copyright (c) 2020 Satoshi Fukutomi <info@fuktommy.com>.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHORS AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHORS OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#
+
+import hashlib
+import hmac
+import optparse
+import re
+import sys
+from getpass import getpass
+
+def parse_args(argv):
+    usage = 'usage: %prog [options]'
+    parser = optparse.OptionParser(usage=usage)
+    parser.add_option('-e', '--encode', dest='encode_mode',
+                      default=True, action='store_true',
+                      help='encode pin')
+    parser.add_option('-d', '--decode', dest='decode_mode',
+                      default=False, action='store_true',
+                      help='decode pin')
+    parser.add_option('-k', '--key', dest='key', metavar='KEY',
+                      help='your secret key')
+    parser.add_option('-p', '--pin', dest='pin', metavar='PIN',
+                      help='your pin')
+    parser.add_option('--test', action='callback', callback=_test,
+                      help='run test and exit')
+    return parser.parse_args(argv)
+
+def encode(key, pin, length=None):
+    """Encode PIN.
+
+    >>> encode('key', '1234')
+    '5793'
+    >>> encode('key', '1234', 10)
+    '5793116204'
+    """
+    if length is None:
+        length = len(pin)
+    m = hmac.new(key.encode('utf8'), digestmod=hashlib.sha512)
+    m.update(pin.encode('utf8'))
+    digest = re.sub(r'[a-f]', '', m.hexdigest())
+    if len(digest) < length:
+        digest += encode(key + key, pin, length - len(digest))
+    return digest[0:length]
+
+def decode(key, pin):
+    """Decode encrypred PIN.
+
+    >>> decode('key', '5792')
+    ['1558', '4657']
+    """
+    result = []
+    length = len(pin)
+    for i in range(0, 10 ** length):
+        p = '{i:0{w}d}'.format(i=i, w=length)
+        if encode(key, p) == pin:
+            result.append(p)
+    return result
+
+def _test(option, opt_str, value, parser, *args, **kwargs):
+    import doctest
+    r = doctest.testmod()
+    if r.failed == 0:
+        sys.exit()
+    else:
+        sys.exit(1)
+
+def _main():
+    options, salt = parse_args(sys.argv[1:])
+    if options.key:
+        key = options.key
+    else:
+        key = getpass('Secret Key:')
+    if options.pin:
+        pin = options.pin
+    else:
+        pin = getpass('PIN:')
+    if not options.decode_mode:
+        print(encode(key, pin))
+    else:
+        pins = decode(key, pin)
+        if not pins:
+            print('PINs not found')
+        else:
+            print('\n'.join(pins))
+
+if __name__ == '__main__':
+    _main()
