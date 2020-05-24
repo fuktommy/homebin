@@ -80,10 +80,12 @@ def encode(key, pin, length=None):
         length = len(pin)
     m = hmac.new(key.encode('utf8'), digestmod=hashlib.sha512)
     m.update(pin.encode('utf8'))
-    digest = re.sub(r'[a-f]', '', m.hexdigest())
+    digest = re.sub(r'[a-f]', '', m.hexdigest())[:length]
+    if digest == pin:
+        digest = ''
     if len(digest) < length:
         digest += encode(key + key, pin, length - len(digest))
-    return digest[0:length]
+    return digest
 
 def decode(key, pin):
     """Decode encrypred PIN.
