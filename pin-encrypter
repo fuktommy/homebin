@@ -8,15 +8,15 @@ usage: pin-encrypter [-e/-d] [-k secret_key] [-p pin]
 example:
     $ pin-encrypter -e          # encode pin
     Secret Key:My Password      # without echoback
-    PIN:1234                    # without echoback
-    1487                        # got your encrypred pin
+    PIN:1234-5678               # without echoback
+    1487-1961                   # got your encrypred pin
 
     $ pin-encrypter -d          # decode pin
     Secret Key:My Password      # without echoback
-    PIN:1487                    # without echoback
-    0389                        # got your plain pin
-    1234
-    5392
+    PIN:1487-1961               # without echoback
+    0389 1234 5392              # got your plain pin
+    -
+    2003 5678 5755
 """
 #
 # Copyright (c) 2020 Satoshi Fukutomi <info@fuktommy.com>.
@@ -68,12 +68,12 @@ def parse_args(argv):
                       help='run test and exit')
     return parser.parse_args(argv)
 
-def encode(key, pin, length=None):
-    """Encode PIN.
+def encode_token(key, pin, length=None):
+    """Encode PIN token.
 
-    >>> encode('key', '1234')
+    >>> encode_token('key', '1234')
     '5793'
-    >>> encode('key', '1234', 10)
+    >>> encode_token('key', '1234', 10)
     '5793116204'
     """
     if length is None:
@@ -84,21 +84,49 @@ def encode(key, pin, length=None):
     if digest == pin:
         digest = ''
     if len(digest) < length:
-        digest += encode(key + key, pin, length - len(digest))
+        digest += encode_token(key + key, pin, length - len(digest))
     return digest
 
-def decode(key, pin):
-    """Decode encrypred PIN.
+def decode_token(key, pin):
+    """Decode encrypred PIN token.
 
-    >>> decode('key', '5792')
+    >>> decode_token('key', '5792')
     ['1558', '4657']
     """
     result = []
     length = len(pin)
     for i in range(0, 10 ** length):
         p = '{i:0{w}d}'.format(i=i, w=length)
-        if encode(key, p) == pin:
+        if encode_token(key, p) == pin:
             result.append(p)
+    return result
+
+def encode(key, pin):
+    """Encode PIN.
+
+    >>> encode('key', '1234-5678')
+    '5793-9976'
+    """
+    digests = []
+    for p in re.split(r'([^\d]+)', pin):
+        if re.fullmatch(r'\d+', p):
+            digests.append(encode_token(key, p))
+        else:
+            digests.append(p)
+    return ''.join(digests)
+
+def decode(key, pin):
+    """Decode encrypred PIN.
+
+    >>> decode('key', '5793-5792')
+    [['1234'], ['-'], ['1558', '4657']]
+    """
+    result = []
+    for p in re.split(r'([^\d]+)', pin):
+        if re.fullmatch(r'\d+', p):
+            result.append(decode_token(key, p))
+        else:
+            result.append([p])
     return result
 
 def _test(option, opt_str, value, parser, *args, **kwargs):
@@ -123,10 +151,11 @@ def _main():
         print(encode(key, pin))
     else:
         pins = decode(key, pin)
-        if not pins:
+        if list(filter(lambda p: not p, pins)):
             print('PINs not found')
+            sys.exit(1)
         else:
-            print('\n'.join(pins))
+            print('\n'.join((' '.join(p) for p in pins)))
 
 if __name__ == '__main__':
     _main()
