@@ -3,4 +3,4 @@ PATH=/usr/bin:/bin
 cd $HOME/log
 OLD=`ls *.txt | sort -r | head -1`
 NEW=`date -I`.txt
-cp -iv $OLD $NEW
+cp -ipv $OLD $NEW
