@@ -1,0 +1,8 @@
+#!/bin/bash -xe
+case $(git branch) in
+    *development* ) git checkout development ;;
+    * )             git checkout master ;;
+esac
+
+git pull --prune
+git fetch --prune origin
