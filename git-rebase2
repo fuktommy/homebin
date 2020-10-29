@@ -5,8 +5,14 @@ if [ "x$1" = x ]; then
     echo "usage $0 branch-name [base-branch]" 1>&2
     exit 1
 fi
+
+case $(git branch) in
+    *development* ) DEFAULT_BASE=development ;;
+    * )             DEFAULT_BASE=master ;;
+esac
+
 BRANCH=$1
-BASE=${2:-master}
+BASE=${2:-$DEFAULT_BASE}
 TIMESTAMP=`date +%Y%m%d%H%M%S`
 
 git checkout $BASE
