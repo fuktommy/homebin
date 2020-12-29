@@ -62,8 +62,8 @@ Commands:
 # SUCH DAMAGE.
 #
 
-import cgi
 import csv
+import html
 import optparse
 import os.path
 import re
@@ -289,7 +289,7 @@ class HTML:
             buf += "  <tr>\n"
             for j in i:
                 if escape:
-                    j = cgi.escape(j).replace("\n", "<br />")
+                    j = html.escape(j).replace("\n", "<br />")
                 buf += "    <td>%s</td>\n" % j
             buf += "  </tr>\n"
         return buf
@@ -309,7 +309,7 @@ class HTML:
         buf = ""
         text = open(name)
         for i in text:
-            buf += cgi.escape(i)
+            buf += html.escape(i)
         buf = re.sub(r"[\r\n]*$", "", buf)
         return "<pre>%s</pre>\n" % buf
 
