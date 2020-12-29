@@ -130,8 +130,7 @@ def copy_files(src_dir, dest_dir, src_dest_pairs, options):
         if options.dry_run:
             continue
         shutil.copy2(src_path, dest_path)
-        mode = os.stat(dest_path).st_mode
-        os.chmod(dest_path, mode & 0o777666)
+        os.chmod(dest_path, os.stat(dest_path).st_mode & ~0o111)
 
 def clear_settings(options):
     dir = get_settings_dir()
