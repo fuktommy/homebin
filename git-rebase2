@@ -8,7 +8,8 @@ fi
 
 case $(git branch) in
     *development* ) DEFAULT_BASE=development ;;
-    * )             DEFAULT_BASE=master ;;
+    *master* )      DEFAULT_BASE=master ;;
+    * )             DEFAULT_BASE=main ;;
 esac
 
 BRANCH=$1
